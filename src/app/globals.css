@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter:      'Inter', system-ui, sans-serif;
+    --font-cormorant:  'Cormorant Garamond', Georgia, serif;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-900 antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  /* Reusable slot-card highlight for "my" slots */
+  .slot-mine {
+    @apply border-sage-500 bg-sage-50;
+  }
+}
