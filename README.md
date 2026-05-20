@@ -2,7 +2,9 @@
 
 **Volunteer rota management for Bodhi Grove Meditation Centre**
 
-A full-stack demo web application built with Next.js, TypeScript, Supabase, and Tailwind CSS. All data is entirely fictional — no real organisation information is included.
+🔗 **Live demo: [sangha-rota.vercel.app](https://sangha-rota.vercel.app)**
+
+A full-stack web application built with Next.js, TypeScript, Supabase, and Tailwind CSS. All data is entirely fictional — no real organisation information is included.
 
 ---
 
