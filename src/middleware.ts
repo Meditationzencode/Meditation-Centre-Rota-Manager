@@ -33,13 +33,23 @@ export async function middleware(request: NextRequest) {
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    // Forward any refreshed session cookies to the redirect response
+    supabaseResponse.cookies.getAll().forEach(c =>
+      redirectResponse.cookies.set(c.name, c.value, c as Parameters<typeof redirectResponse.cookies.set>[2]),
+    )
+    return redirectResponse
   }
 
   if (user && pathname === '/login') {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    // Forward any refreshed session cookies to the redirect response
+    supabaseResponse.cookies.getAll().forEach(c =>
+      redirectResponse.cookies.set(c.name, c.value, c as Parameters<typeof redirectResponse.cookies.set>[2]),
+    )
+    return redirectResponse
   }
 
   return supabaseResponse

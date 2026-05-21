@@ -6,8 +6,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  console.log('[layout] url:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30))
-  console.log('[layout] user:', user?.id ?? 'null', 'authError:', authError?.message ?? 'none')
+  console.error('[layout] url:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30))
+  console.error('[layout] user:', user?.id ?? 'null', 'authError:', authError?.message ?? 'none')
 
   if (!user) redirect('/login')
 
@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('id', user.id)
     .single()
 
-  console.log('[layout] profile:', profile?.name ?? 'null', 'profileError:', profileError?.message ?? 'none')
+  console.error('[layout] profile:', profile?.name ?? 'null', 'profileError:', profileError?.message ?? 'none')
 
   if (!profile) redirect('/login')
 
