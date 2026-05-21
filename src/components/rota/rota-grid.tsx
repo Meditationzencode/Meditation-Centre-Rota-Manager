@@ -1,8 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import Link from 'next/link'
-import { signUpForSlot, cancelSignup } from '@/lib/actions'
+import { signUpForSlot, cancelSignup, requestSwap } from '@/lib/actions'
 import { fmtTime } from '@/lib/utils'
 import type { ActionResult } from '@/lib/types'
 
@@ -17,6 +17,7 @@ interface SlotData {
   signups: unknown[]
   mySignup: boolean
   spotsLeft: number
+  swapPending: boolean
   volunteers: string[]
 }
 
@@ -30,10 +31,11 @@ interface Props {
   days:       DayData[]
   weekStart:  string
   isManager:  boolean
+  canSignUp:  boolean
   userId:     string
 }
 
-export default function RotaGrid({ days, weekStart, isManager, userId }: Props) {
+export default function RotaGrid({ days, weekStart, isManager, canSignUp }: Props) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
       {days.map(day => (
@@ -50,6 +52,7 @@ export default function RotaGrid({ days, weekStart, isManager, userId }: Props) 
                 slot={slot}
                 weekStart={weekStart}
                 isManager={isManager}
+                canSignUp={canSignUp}
               />
             ))}
           </div>
@@ -59,9 +62,22 @@ export default function RotaGrid({ days, weekStart, isManager, userId }: Props) 
   )
 }
 
-function SlotCard({ slot, weekStart, isManager }: { slot: SlotData; weekStart: string; isManager: boolean }) {
-  const [signupState,  signupAction,  signupPending]  = useActionState<ActionResult | null, FormData>(signUpForSlot,  null)
-  const [cancelState,  cancelAction,  cancelPending]  = useActionState<ActionResult | null, FormData>(cancelSignup,   null)
+function SlotCard({
+  slot,
+  weekStart,
+  isManager,
+  canSignUp,
+}: {
+  slot: SlotData
+  weekStart: string
+  isManager: boolean
+  canSignUp: boolean
+}) {
+  const [showSwapForm, setShowSwapForm] = useState(false)
+
+  const [signupState, signupAction, signupPending] = useActionState<ActionResult | null, FormData>(signUpForSlot, null)
+  const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(cancelSignup,  null)
+  const [swapState,   swapAction,   swapPending]   = useActionState<ActionResult | null, FormData>(requestSwap,   null)
 
   const borderClass = slot.mySignup
     ? 'border-sage-400 bg-sage-50'
@@ -70,6 +86,8 @@ function SlotCard({ slot, weekStart, isManager }: { slot: SlotData; weekStart: s
     : slot.spotsLeft === 1
     ? 'border-amber-200 bg-amber-50/50'
     : 'border-stone-200 bg-stone-50'
+
+  const swapSubmitted = swapState && 'success' in swapState
 
   return (
     <div className={`border rounded-md p-1.5 text-[11px] transition-colors ${borderClass}`}>
@@ -107,31 +125,52 @@ function SlotCard({ slot, weekStart, isManager }: { slot: SlotData; weekStart: s
 
       {/* Actions */}
       <div className="flex gap-1 mt-1.5 flex-wrap">
-        {slot.mySignup ? (
-          <form action={cancelAction}>
-            <input type="hidden" name="slotId" value={slot.id} />
-            <input type="hidden" name="weekStart" value={weekStart} />
-            <button
-              type="submit"
-              disabled={cancelPending}
-              className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-300 rounded hover:bg-amber-200 disabled:opacity-50 transition-colors"
-            >
-              {cancelPending ? '…' : 'Cancel'}
-            </button>
-          </form>
-        ) : slot.spotsLeft > 0 ? (
-          <form action={signupAction}>
-            <input type="hidden" name="slotId" value={slot.id} />
-            <input type="hidden" name="weekStart" value={weekStart} />
-            <button
-              type="submit"
-              disabled={signupPending}
-              className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50 transition-colors"
-            >
-              {signupPending ? '…' : 'Sign up'}
-            </button>
-          </form>
-        ) : (
+        {canSignUp && (
+          slot.mySignup ? (
+            <>
+              <form action={cancelAction}>
+                <input type="hidden" name="slotId" value={slot.id} />
+                <input type="hidden" name="weekStart" value={weekStart} />
+                <button
+                  type="submit"
+                  disabled={cancelPending}
+                  className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-300 rounded hover:bg-amber-200 disabled:opacity-50 transition-colors"
+                >
+                  {cancelPending ? '…' : 'Cancel'}
+                </button>
+              </form>
+
+              {/* Swap request */}
+              {!slot.swapPending && !swapSubmitted && !showSwapForm && (
+                <button
+                  onClick={() => setShowSwapForm(true)}
+                  className="text-[10px] font-medium px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                >
+                  Swap?
+                </button>
+              )}
+              {(slot.swapPending || swapSubmitted) && (
+                <span className="text-[10px] text-stone-400 italic">Swap pending</span>
+              )}
+            </>
+          ) : slot.spotsLeft > 0 ? (
+            <form action={signupAction}>
+              <input type="hidden" name="slotId" value={slot.id} />
+              <input type="hidden" name="weekStart" value={weekStart} />
+              <button
+                type="submit"
+                disabled={signupPending}
+                className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50 transition-colors"
+              >
+                {signupPending ? '…' : 'Sign up'}
+              </button>
+            </form>
+          ) : (
+            <span className="text-[10px] text-stone-400 italic">Full</span>
+          )
+        )}
+
+        {!canSignUp && slot.spotsLeft <= 0 && (
           <span className="text-[10px] text-stone-400 italic">Full</span>
         )}
 
@@ -145,12 +184,48 @@ function SlotCard({ slot, weekStart, isManager }: { slot: SlotData; weekStart: s
         )}
       </div>
 
-      {/* Inline error */}
-      {(signupState && 'error' in signupState) && (
+      {/* Inline swap form */}
+      {showSwapForm && !swapSubmitted && (
+        <form
+          action={swapAction}
+          className="mt-1.5 space-y-1"
+          onSubmit={() => setShowSwapForm(false)}
+        >
+          <input type="hidden" name="slotId" value={slot.id} />
+          <textarea
+            name="reason"
+            placeholder="Reason (optional)"
+            rows={2}
+            className="w-full text-[10px] border border-stone-300 rounded px-1.5 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+          <div className="flex gap-1">
+            <button
+              type="submit"
+              disabled={swapPending}
+              className="text-[10px] font-medium px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {swapPending ? '…' : 'Request'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSwapForm(false)}
+              className="text-[10px] font-medium px-1.5 py-0.5 bg-stone-100 text-stone-600 border border-stone-300 rounded hover:bg-stone-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Inline errors */}
+      {signupState && 'error' in signupState && (
         <p className="text-red-600 text-[10px] mt-1">{signupState.error}</p>
       )}
-      {(cancelState && 'error' in cancelState) && (
+      {cancelState && 'error' in cancelState && (
         <p className="text-red-600 text-[10px] mt-1">{cancelState.error}</p>
+      )}
+      {swapState && 'error' in swapState && (
+        <p className="text-red-600 text-[10px] mt-1">{swapState.error}</p>
       )}
     </div>
   )

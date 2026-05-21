@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
-import { getWeekStart, addDays, fmtDate, fmtDateLong, fmtTime } from '@/lib/utils'
+import { getWeekStart, addDays, fmtDate, fmtDateLong } from '@/lib/utils'
 import RotaGrid from '@/components/rota/rota-grid'
 
 export const metadata: Metadata = { title: 'Rota' }
@@ -32,11 +32,14 @@ export default async function RotaPage({
   const nextWeek  = addDays(weekStart, 7)
   const weekLabel = `${fmtDateLong(weekStart)} – ${fmtDateLong(weekEnd)}`
 
-  const [{ data: slots }, { data: signups }, { data: profiles }] = await Promise.all([
+  const [{ data: slots }, { data: signups }, { data: mySwaps }] = await Promise.all([
     supabase.from('slots').select('*').gte('date', weekStart).lte('date', weekEnd).order('start_time'),
     supabase.from('signups').select('*, profile:profiles(id, name)'),
-    supabase.from('profiles').select('id, name'),
+    supabase.from('shift_swaps').select('slot_id').eq('requester_id', user.id).eq('status', 'pending'),
   ])
+
+  const mySwapSlotIds = new Set((mySwaps ?? []).map(s => s.slot_id as string))
+  const canSignUp     = profile.role !== 'viewer'
 
   // Build 7-day grid
   const days = DAY_NAMES.map((dayName, i) => {
@@ -48,9 +51,10 @@ export default async function RotaPage({
         const mySignup    = slotSignups.find(sig => sig.user_id === user.id)
         return {
           ...slot,
-          signups:   slotSignups,
-          mySignup:  !!mySignup,
-          spotsLeft: slot.max_volunteers - slotSignups.length,
+          signups:    slotSignups,
+          mySignup:   !!mySignup,
+          spotsLeft:  slot.max_volunteers - slotSignups.length,
+          swapPending: mySwapSlotIds.has(slot.id),
           volunteers: slotSignups.map(sig => (sig.profile as { name: string } | null)?.name ?? 'Unknown'),
         }
       })
@@ -97,7 +101,13 @@ export default async function RotaPage({
         </div>
 
         {/* Grid */}
-        <RotaGrid days={days} weekStart={weekStart} isManager={isManager} userId={user.id} />
+        <RotaGrid
+          days={days}
+          weekStart={weekStart}
+          isManager={isManager}
+          canSignUp={canSignUp}
+          userId={user.id}
+        />
 
         {/* Legend */}
         <div className="flex gap-5 text-xs text-stone-400 pb-2">

@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'coordinator' | 'volunteer'
+export type Role = 'admin' | 'coordinator' | 'volunteer' | 'viewer'
 
 export interface Profile {
   id: string
@@ -51,6 +51,20 @@ export interface AuditEntry {
   created_at: string
   // joined
   profile?: Pick<Profile, 'name'> | null
+}
+
+export interface ShiftSwap {
+  id: string
+  requester_id: string
+  slot_id: string
+  reason: string
+  status: 'pending' | 'approved' | 'rejected'
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  // joined
+  requester?: Pick<Profile, 'name'> | null
+  slot?: Pick<Slot, 'date' | 'duty' | 'start_time' | 'end_time' | 'location'> | null
 }
 
 export type ActionResult = { error: string } | { success: true }

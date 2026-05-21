@@ -10,6 +10,7 @@ const ROLE_STYLES = {
   admin:       'bg-purple-100 text-purple-800',
   coordinator: 'bg-teal-100 text-teal-800',
   volunteer:   'bg-sage-100 text-sage-800',
+  viewer:      'bg-stone-100 text-stone-600',
 }
 
 export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' | 'role'> }) {
@@ -38,6 +39,7 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
     ...(profile.role === 'admin'
       ? [
           { href: '/admin/members',  label: 'Members'  },
+          { href: '/admin/swaps',    label: 'Swaps'    },
           { href: '/admin/activity', label: 'Activity' },
         ]
       : []),

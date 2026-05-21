@@ -39,12 +39,14 @@ export default function MemberForm({ member }: Props) {
       <div>
         <label className={labelCls}>Role <span className="text-red-500">*</span></label>
         <select name="role" required defaultValue={member?.role ?? 'volunteer'} className={fieldCls}>
+          <option value="viewer">Viewer</option>
           <option value="volunteer">Volunteer</option>
           <option value="coordinator">Coordinator</option>
           <option value="admin">Admin</option>
         </select>
         <p className="text-xs text-stone-400 mt-1">
-          Volunteers can view &amp; sign up. Coordinators can manage the schedule. Admins have full access.
+          Viewers can read the rota only. Volunteers can sign up for slots and submit availability.
+          Coordinators can also manage the schedule. Admins have full access including members and audit log.
         </p>
       </div>
 

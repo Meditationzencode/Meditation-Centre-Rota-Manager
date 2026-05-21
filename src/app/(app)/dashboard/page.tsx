@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
-import Badge from '@/components/ui/badge'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -24,7 +23,10 @@ export default async function DashboardPage() {
 
   const today = new Date().toISOString().slice(0, 10)
 
-  // My upcoming duties
+  const isViewer  = profile.role === 'viewer'
+  const isManager = profile.role === 'admin' || profile.role === 'coordinator'
+
+  // My upcoming duties (not applicable to viewers)
   const mySignupSlotIds = new Set(
     (allSignups ?? []).filter(s => s.user_id === user.id).map(s => s.slot_id),
   )
@@ -45,8 +47,6 @@ export default async function DashboardPage() {
     })
     .filter(s => s.spotsLeft > 0)
     .slice(0, 6)
-
-  const isManager = profile.role === 'admin' || profile.role === 'coordinator'
 
   const stats = isManager ? {
     members:    (allProfiles ?? []).length,
@@ -70,7 +70,23 @@ export default async function DashboardPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-5 mt-7 space-y-8">
-        {/* Stats row — coordinators and admins only */}
+
+        {/* Viewer: read-only rota summary */}
+        {isViewer && (
+          <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-6 text-center space-y-3">
+            <p className="text-stone-500 text-sm">
+              You have viewer access. You can browse the rota but cannot sign up for slots.
+            </p>
+            <Link
+              href="/rota"
+              className="inline-block bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-5 py-2 rounded-md transition-colors"
+            >
+              View this week&apos;s rota →
+            </Link>
+          </div>
+        )}
+
+        {/* Stats row — managers only */}
         {stats && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -92,70 +108,72 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Two-column section */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* My upcoming duties */}
-          <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-              <h2 className="font-serif text-lg">My Upcoming Duties</h2>
-              <Link href="/rota" className="text-xs text-teal-700 hover:underline">View rota →</Link>
-            </div>
-            {myUpcoming.length === 0 ? (
-              <div className="px-5 py-8 text-center text-stone-400 text-sm space-y-3">
-                <p>No upcoming duties.</p>
-                <Link href="/rota" className="inline-block text-xs border border-stone-300 rounded-md px-3 py-1.5 hover:bg-stone-50">
-                  Browse open slots
-                </Link>
+        {/* Two-column section — not shown to viewers */}
+        {!isViewer && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* My upcoming duties */}
+            <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+                <h2 className="font-serif text-lg">My Upcoming Duties</h2>
+                <Link href="/rota" className="text-xs text-teal-700 hover:underline">View rota →</Link>
               </div>
-            ) : (
-              <ul className="divide-y divide-stone-100">
-                {myUpcoming.map(s => (
-                  <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                    <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
-                      {fmtDate(s.date)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{s.duty}</p>
-                      <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+              {myUpcoming.length === 0 ? (
+                <div className="px-5 py-8 text-center text-stone-400 text-sm space-y-3">
+                  <p>No upcoming duties.</p>
+                  <Link href="/rota" className="inline-block text-xs border border-stone-300 rounded-md px-3 py-1.5 hover:bg-stone-50">
+                    Browse open slots
+                  </Link>
+                </div>
+              ) : (
+                <ul className="divide-y divide-stone-100">
+                  {myUpcoming.map(s => (
+                    <li key={s.id} className="flex items-center gap-3 px-5 py-3">
+                      <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
+                        {fmtDate(s.date)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{s.duty}</p>
+                        <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
-          {/* Open slots */}
-          <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-              <h2 className="font-serif text-lg">Open Slots This Week</h2>
-              <Link href="/rota" className="text-xs text-teal-700 hover:underline">Sign up →</Link>
-            </div>
-            {openSlots.length === 0 ? (
-              <div className="px-5 py-8 text-center text-stone-400 text-sm">
-                All upcoming slots are filled.
+            {/* Open slots */}
+            <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+                <h2 className="font-serif text-lg">Open Slots This Week</h2>
+                <Link href="/rota" className="text-xs text-teal-700 hover:underline">Sign up →</Link>
               </div>
-            ) : (
-              <ul className="divide-y divide-stone-100">
-                {openSlots.map(s => (
-                  <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                    <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
-                      {fmtDate(s.date)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{s.duty}</p>
-                      <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
-                    </div>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                      s.spotsLeft === 1 ? 'bg-amber-100 text-amber-700' : 'bg-sage-100 text-sage-700'
-                    }`}>
-                      {s.spotsLeft} left
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+              {openSlots.length === 0 ? (
+                <div className="px-5 py-8 text-center text-stone-400 text-sm">
+                  All upcoming slots are filled.
+                </div>
+              ) : (
+                <ul className="divide-y divide-stone-100">
+                  {openSlots.map(s => (
+                    <li key={s.id} className="flex items-center gap-3 px-5 py-3">
+                      <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
+                        {fmtDate(s.date)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{s.duty}</p>
+                        <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
+                      </div>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        s.spotsLeft === 1 ? 'bg-amber-100 text-amber-700' : 'bg-sage-100 text-sage-700'
+                      }`}>
+                        {s.spotsLeft} left
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        )}
 
         {/* Quick actions — managers only */}
         {isManager && (

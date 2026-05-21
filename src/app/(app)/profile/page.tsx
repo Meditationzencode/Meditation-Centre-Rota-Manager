@@ -10,6 +10,7 @@ const ROLE_STYLES = {
   admin:       'bg-purple-100 text-purple-800',
   coordinator: 'bg-teal-100 text-teal-800',
   volunteer:   'bg-sage-100 text-sage-800',
+  viewer:      'bg-stone-100 text-stone-600',
 }
 
 export default async function ProfilePage() {
@@ -21,7 +22,7 @@ export default async function ProfilePage() {
     getProfileForUser<{
       id: string
       name: string
-      role: 'admin' | 'coordinator' | 'volunteer'
+      role: 'admin' | 'coordinator' | 'volunteer' | 'viewer'
       active: boolean
       created_at: string
     }>(user.id, '*'),
@@ -68,8 +69,10 @@ export default async function ProfilePage() {
         {/* Edit form */}
         <ProfileForm name={profile.name} />
 
-        {/* Unavailability */}
-        <UnavailabilityForm entries={unavailability ?? []} />
+        {/* Unavailability — not shown to viewers */}
+        {profile.role !== 'viewer' && (
+          <UnavailabilityForm entries={unavailability ?? []} />
+        )}
 
         {/* Upcoming sign-ups */}
         <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">

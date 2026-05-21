@@ -175,6 +175,71 @@ export async function cancelSignup(_prev: ActionResult | null, formData: FormDat
   return { success: true }
 }
 
+// ── Shift swaps ───────────────────────────────────────────────────────────────
+
+export async function requestSwap(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const slotId = formData.get('slotId') as string
+  const reason = (formData.get('reason') as string ?? '').trim()
+
+  const { data: signup } = await supabase
+    .from('signups').select('id').eq('slot_id', slotId).eq('user_id', user.id).single()
+  if (!signup) return { error: 'You are not signed up for this slot.' }
+
+  const { error } = await supabase
+    .from('shift_swaps').insert({ requester_id: user.id, slot_id: slotId, reason })
+
+  if (error) {
+    if (error.code === '23505') return { error: 'You already have a pending swap request for this slot.' }
+    return { error: error.message }
+  }
+
+  await audit(user.id, 'swap.request', 'shift_swap', slotId, `Requested swap for slot ${slotId}`)
+  revalidatePath('/rota')
+  return { success: true }
+}
+
+export async function reviewSwap(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const swapId   = formData.get('swapId')   as string
+  const decision = formData.get('decision') as 'approved' | 'rejected'
+
+  const admin = createAdminClient()
+  const { data: swap } = await admin
+    .from('shift_swaps')
+    .select('requester_id, slot_id, slot:slots(duty, date)')
+    .eq('id', swapId)
+    .single()
+
+  if (!swap) return { error: 'Swap request not found.' }
+
+  const { error } = await admin
+    .from('shift_swaps')
+    .update({ status: decision, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', swapId)
+
+  if (error) return { error: error.message }
+
+  if (decision === 'approved') {
+    await admin.from('signups')
+      .delete().eq('slot_id', swap.slot_id).eq('user_id', swap.requester_id)
+  }
+
+  const slot = swap.slot as { duty: string; date: string } | null
+  await audit(user.id, `swap.${decision}`, 'shift_swap', swapId,
+    `${decision === 'approved' ? 'Approved' : 'Rejected'} swap for ${slot?.duty} on ${slot?.date}`)
+
+  revalidatePath('/admin/swaps')
+  revalidatePath('/rota')
+  return { success: true }
+}
+
 // ── Slots (admin / coordinator) ───────────────────────────────────────────────
 
 function parseSlotForm(formData: FormData) {
