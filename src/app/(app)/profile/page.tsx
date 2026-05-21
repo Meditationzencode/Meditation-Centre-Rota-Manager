@@ -76,8 +76,17 @@ export default async function ProfilePage() {
 
         {/* Upcoming sign-ups */}
         <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-stone-100">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
             <h2 className="font-serif text-lg">My Sign-ups</h2>
+            <a
+              href="/api/rota/export"
+              className="text-xs text-stone-500 hover:text-stone-700 border border-stone-200 rounded-md px-2.5 py-1.5 hover:bg-stone-50 transition-colors flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              Export .ics
+            </a>
           </div>
           {upcoming.length === 0 ? (
             <div className="px-5 py-8 text-center text-stone-400 text-sm">No upcoming sign-ups.</div>

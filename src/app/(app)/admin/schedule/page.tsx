@@ -42,12 +42,20 @@ export default async function SchedulePage() {
             <h1 className="font-serif text-3xl font-medium">Manage Schedule</h1>
             <p className="text-stone-500 text-sm mt-1">All rota slots across all weeks</p>
           </div>
-          <Link
-            href="/admin/schedule/new"
-            className="bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
-          >
-            + Add Slot
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/schedule/recurring"
+              className="border border-stone-300 text-stone-700 hover:bg-stone-50 text-sm font-medium px-4 py-2 rounded-md transition-colors"
+            >
+              Recurring
+            </Link>
+            <Link
+              href="/admin/schedule/new"
+              className="bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+            >
+              + Add Slot
+            </Link>
+          </div>
         </div>
       </div>
 

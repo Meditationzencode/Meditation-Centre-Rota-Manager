@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { getWeekStart, addDays, fmtDate, fmtDateLong } from '@/lib/utils'
 import RotaGrid from '@/components/rota/rota-grid'
+import PrintButton from '@/components/rota/print-button'
 
 export const metadata: Metadata = { title: 'Rota' }
 
@@ -71,13 +72,23 @@ export default async function RotaPage({
             <h1 className="font-serif text-3xl font-medium">Rota</h1>
             <p className="text-stone-500 text-sm mt-1">{weekLabel}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <div className="flex rounded-md border border-stone-200 overflow-hidden text-sm">
               <span className="px-3 py-1.5 bg-sage-600 text-white font-medium">Week</span>
               <Link href="/rota/month" className="px-3 py-1.5 text-stone-600 hover:bg-stone-50 border-l border-stone-200 transition-colors">
                 Month
               </Link>
             </div>
+            <PrintButton />
+            <Link
+              href="/api/rota/export"
+              className="text-sm font-medium text-stone-600 hover:text-stone-900 border border-stone-200 rounded-md px-3 py-1.5 hover:bg-stone-50 transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              Export .ics
+            </Link>
             {isManager && (
               <Link
                 href="/admin/schedule/new"

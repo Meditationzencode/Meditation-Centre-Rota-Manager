@@ -67,6 +67,19 @@ export interface ShiftSwap {
   slot?: Pick<Slot, 'date' | 'duty' | 'start_time' | 'end_time' | 'location'> | null
 }
 
+export interface RecurringTemplate {
+  id: string
+  duty: string
+  location: string
+  days_of_week: number[]  // 0 = Mon … 6 = Sun
+  start_time: string
+  end_time: string
+  max_volunteers: number
+  notes: string
+  active: boolean
+  created_at: string
+}
+
 export type ActionResult = { error: string } | { success: true }
 
 export const DUTIES = [
