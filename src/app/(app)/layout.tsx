@@ -4,15 +4,20 @@ import Nav from '@/components/nav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  console.log('[layout] url:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30))
+  console.log('[layout] user:', user?.id ?? 'null', 'authError:', authError?.message ?? 'none')
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, name, role')
     .eq('id', user.id)
     .single()
+
+  console.log('[layout] profile:', profile?.name ?? 'null', 'profileError:', profileError?.message ?? 'none')
 
   if (!profile) redirect('/login')
 
