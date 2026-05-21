@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import Nav from '@/components/nav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -11,15 +11,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!user) redirect('/login')
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, name, role')
-    .eq('id', user.id)
-    .single()
+  const profile = await getProfileForUser(user.id)
 
-  console.error('[layout] profile:', profile?.name ?? 'null', 'profileError:', profileError?.message ?? 'none')
+  console.error('[layout] profile:', profile?.name ?? 'null')
 
-  if (!profile) redirect('/login')
+  if (!profile) redirect('/auth-error?reason=missing_profile')
 
   return (
     <div className="min-h-screen flex flex-col">

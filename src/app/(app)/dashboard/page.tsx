@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
 import Badge from '@/components/ui/badge'
 
@@ -12,15 +12,15 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: allSlots }, { data: allSignups }, { data: allProfiles }] =
+  const [profile, { data: allSlots }, { data: allSignups }, { data: allProfiles }] =
     await Promise.all([
-      supabase.from('profiles').select('id, name, role').eq('id', user.id).single(),
+      getProfileForUser(user.id),
       supabase.from('slots').select('*').order('date').order('start_time'),
       supabase.from('signups').select('*'),
       supabase.from('profiles').select('id, role, active'),
     ])
 
-  if (!profile) redirect('/login')
+  if (!profile) redirect('/auth-error?reason=missing_profile')
 
   const today = new Date().toISOString().slice(0, 10)
 

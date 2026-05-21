@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import ProfileForm from './profile-form'
 import UnavailabilityForm from './unavailability-form'
 
@@ -17,8 +17,14 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: signups }, { data: unavailability }] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
+  const [profile, { data: signups }, { data: unavailability }] = await Promise.all([
+    getProfileForUser<{
+      id: string
+      name: string
+      role: 'admin' | 'coordinator' | 'volunteer'
+      active: boolean
+      created_at: string
+    }>(user.id, '*'),
     supabase.from('signups')
       .select('*, slot:slots(*)')
       .eq('user_id', user.id)
@@ -29,7 +35,7 @@ export default async function ProfilePage() {
       .order('date'),
   ])
 
-  if (!profile) redirect('/login')
+  if (!profile) redirect('/auth-error?reason=missing_profile')
 
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = (signups ?? [])

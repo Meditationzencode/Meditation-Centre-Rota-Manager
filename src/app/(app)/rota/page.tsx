@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { getWeekStart, addDays, fmtDate, fmtDateLong, fmtTime } from '@/lib/utils'
 import RotaGrid from '@/components/rota/rota-grid'
 
@@ -19,13 +19,9 @@ export default async function RotaPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, role')
-    .eq('id', user.id)
-    .single()
+  const profile = await getProfileForUser<{ id: string; role: string }>(user.id, 'id, role')
 
-  if (!profile) redirect('/login')
+  if (!profile) redirect('/auth-error?reason=missing_profile')
 
   const weekStart = rawWeek && /^\d{4}-\d{2}-\d{2}$/.test(rawWeek)
     ? getWeekStart(rawWeek)
