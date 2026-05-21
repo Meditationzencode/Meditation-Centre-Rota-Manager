@@ -3,6 +3,12 @@
 -- Run this in the Supabase SQL editor AFTER schema.sql and rls.sql
 -- ============================================================
 
+-- ── Ensure helper exists (idempotent) ────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.my_role()
+RETURNS TEXT LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid()
+$$;
+
 -- ── Unavailability ────────────────────────────────────────────────────────────
 -- Volunteers mark dates they cannot attend
 
