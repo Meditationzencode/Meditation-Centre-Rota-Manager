@@ -5,7 +5,9 @@ export interface Profile {
   name: string
   role: Role
   active: boolean
+  phone_number: string
   created_at: string
+  updated_at: string | null
   email?: string  // joined from auth.users where needed
 }
 
@@ -19,7 +21,10 @@ export interface Slot {
   location: string
   max_volunteers: number
   notes: string
+  status: 'open' | 'cancelled'
+  created_by: string | null
   created_at: string
+  updated_at: string | null
 }
 
 export interface Signup {
@@ -58,6 +63,7 @@ export interface ShiftSwap {
   requester_id: string
   slot_id: string
   reason: string
+  admin_notes: string
   status: 'pending' | 'approved' | 'rejected'
   reviewed_by: string | null
   reviewed_at: string | null

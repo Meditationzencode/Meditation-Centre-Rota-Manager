@@ -14,6 +14,7 @@ const STATUS_STYLES = {
 type SwapEntry = {
   id: string
   reason: string
+  admin_notes: string
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   requester: { name: string } | null
@@ -34,7 +35,7 @@ export default async function SwapsPage() {
   const { data: rawSwaps } = await admin
     .from('shift_swaps')
     .select(`
-      id, reason, status, created_at,
+      id, reason, admin_notes, status, created_at,
       requester:profiles!requester_id(name),
       slot:slots(date, duty, start_time, end_time, location)
     `)
@@ -121,6 +122,11 @@ function SwapRow({ swap, showActions }: { swap: SwapEntry; showActions: boolean 
         )}
         {swap.reason && (
           <p className="text-xs text-stone-400 italic mt-1">&ldquo;{swap.reason}&rdquo;</p>
+        )}
+        {swap.admin_notes && (
+          <p className="text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded px-2 py-1 mt-1">
+            Note: {swap.admin_notes}
+          </p>
         )}
         <p className="text-[10px] text-stone-400 mt-1">
           Requested {new Date(swap.created_at).toLocaleDateString('en-GB', {

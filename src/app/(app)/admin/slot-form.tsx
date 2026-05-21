@@ -83,6 +83,16 @@ export default function SlotForm({ slot }: Props) {
           className={`${fieldCls} resize-none`} />
       </div>
 
+      {slot && (
+        <div>
+          <label className={labelCls}>Status</label>
+          <select name="status" defaultValue={slot.status ?? 'open'} className={fieldCls}>
+            <option value="open">Open</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      )}
+
       <div className="flex justify-end gap-3 pt-2 border-t border-stone-100">
         <a href="/admin/schedule" className="text-sm px-4 py-2 border border-stone-300 rounded-md text-stone-700 hover:bg-stone-50 transition-colors">
           Cancel

@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import { updateProfile } from '@/lib/actions'
 import type { ActionResult } from '@/lib/types'
 
-export default function ProfileForm({ name }: { name: string }) {
+export default function ProfileForm({ name, phone }: { name: string; phone: string }) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(updateProfile, null)
   const error   = state && 'error' in state   ? state.error : null
   const success = state && 'success' in state ? true        : false
@@ -21,6 +21,13 @@ export default function ProfileForm({ name }: { name: string }) {
       <div>
         <label className="block text-sm font-medium text-stone-700 mb-1">Full Name</label>
         <input type="text" name="name" required defaultValue={name} className={fieldCls} />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-1">
+          Phone Number <span className="text-stone-400 font-normal">(optional)</span>
+        </label>
+        <input type="tel" name="phone" defaultValue={phone} placeholder="+44 7700 900000" className={fieldCls} />
       </div>
 
       <div>

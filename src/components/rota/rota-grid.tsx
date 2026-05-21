@@ -14,6 +14,7 @@ interface SlotData {
   end_time: string
   max_volunteers: number
   notes: string
+  status: string
   signups: unknown[]
   mySignup: boolean
   spotsLeft: number
@@ -79,7 +80,10 @@ function SlotCard({
   const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(cancelSignup,  null)
   const [swapState,   swapAction,   swapPending]   = useActionState<ActionResult | null, FormData>(requestSwap,   null)
 
-  const borderClass = slot.mySignup
+  const isCancelled = slot.status === 'cancelled'
+  const borderClass = isCancelled
+    ? 'border-stone-200 bg-stone-100 opacity-60'
+    : slot.mySignup
     ? 'border-sage-400 bg-sage-50'
     : slot.spotsLeft <= 0
     ? 'border-red-200 bg-red-50/50'
@@ -107,6 +111,11 @@ function SlotCard({
       <Link href={`/rota/${slot.id}`} className="font-semibold text-stone-800 leading-tight hover:text-teal-700 transition-colors block">
         {slot.duty}
       </Link>
+      {isCancelled && (
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500 bg-stone-200 px-1.5 py-0.5 rounded">
+          Cancelled
+        </span>
+      )}
       <p className="text-stone-400 flex items-center gap-0.5">
         <span>📍</span> {slot.location}
       </p>

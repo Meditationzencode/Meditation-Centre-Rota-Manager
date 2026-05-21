@@ -24,6 +24,7 @@ export default async function ProfilePage() {
       name: string
       role: 'admin' | 'coordinator' | 'volunteer' | 'viewer'
       active: boolean
+      phone_number: string
       created_at: string
     }>(user.id, '*'),
     supabase.from('signups')
@@ -63,11 +64,14 @@ export default async function ProfilePage() {
               {profile.role}
             </span>
             <p className="text-sm text-stone-400 mt-1">{user.email}</p>
+            {profile.phone_number && (
+              <p className="text-sm text-stone-400">{profile.phone_number}</p>
+            )}
           </div>
         </div>
 
         {/* Edit form */}
-        <ProfileForm name={profile.name} />
+        <ProfileForm name={profile.name} phone={profile.phone_number} />
 
         {/* Unavailability — not shown to viewers */}
         {profile.role !== 'viewer' && (

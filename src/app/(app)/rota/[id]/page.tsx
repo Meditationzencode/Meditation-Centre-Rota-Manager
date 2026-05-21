@@ -21,7 +21,7 @@ export default async function SlotDetailPage({
   if (!profile) redirect('/auth-error?reason=missing_profile')
 
   const [{ data: slot }, { data: signups }, { data: swaps }] = await Promise.all([
-    supabase.from('slots').select('*').eq('id', id).single(),
+    supabase.from('slots').select('*, creator:profiles!created_by(name)').eq('id', id).single(),
     supabase.from('signups').select('*, profile:profiles(id, name)').eq('slot_id', id),
     supabase.from('shift_swaps')
       .select('slot_id')
@@ -55,7 +55,14 @@ export default async function SlotDetailPage({
             <span className="text-stone-700">{slot.duty}</span>
           </div>
           <h1 className="font-serif text-3xl font-medium">{slot.duty}</h1>
-          <p className="text-stone-500 text-sm mt-1">{fmtDateLong(slot.date)}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-stone-500 text-sm">{fmtDateLong(slot.date)}</p>
+            {slot.status === 'cancelled' && (
+              <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                Cancelled
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -88,6 +95,12 @@ export default async function SlotDetailPage({
               <div className="col-span-2">
                 <dt className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Notes</dt>
                 <dd className="text-stone-600 italic">{slot.notes}</dd>
+              </div>
+            )}
+            {(slot.creator as { name: string } | null)?.name && (
+              <div className="col-span-2">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Added by</dt>
+                <dd className="text-stone-600">{(slot.creator as { name: string }).name}</dd>
               </div>
             )}
           </dl>

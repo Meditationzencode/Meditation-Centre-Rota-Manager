@@ -5,46 +5,44 @@ import { reviewSwap } from '@/lib/actions'
 import type { ActionResult } from '@/lib/types'
 
 export default function SwapActions({ swapId }: { swapId: string }) {
-  const [approveState, approveAction, approvePending] = useActionState<ActionResult | null, FormData>(reviewSwap, null)
-  const [rejectState,  rejectAction,  rejectPending]  = useActionState<ActionResult | null, FormData>(reviewSwap, null)
+  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(reviewSwap, null)
 
-  if (approveState && 'success' in approveState) {
-    return <span className="text-xs text-sage-700 font-medium">Approved</span>
-  }
-  if (rejectState && 'success' in rejectState) {
-    return <span className="text-xs text-red-600 font-medium">Rejected</span>
+  if (state && 'success' in state) {
+    return <span className="text-xs text-stone-400 italic">Done</span>
   }
 
   return (
-    <div className="flex gap-2 flex-shrink-0">
-      {(approveState && 'error' in approveState) && (
-        <p className="text-red-600 text-xs">{approveState.error}</p>
+    <form action={formAction} className="flex flex-col gap-2 flex-shrink-0 min-w-[160px]">
+      <input type="hidden" name="swapId" value={swapId} />
+      <textarea
+        name="adminNotes"
+        rows={2}
+        placeholder="Notes (optional)"
+        className="text-xs border border-stone-300 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-sage-500 w-full"
+      />
+      {state && 'error' in state && (
+        <p className="text-red-600 text-xs">{state.error}</p>
       )}
-      {(rejectState && 'error' in rejectState) && (
-        <p className="text-red-600 text-xs">{rejectState.error}</p>
-      )}
-      <form action={approveAction}>
-        <input type="hidden" name="swapId"   value={swapId} />
-        <input type="hidden" name="decision" value="approved" />
+      <div className="flex gap-1.5">
         <button
           type="submit"
-          disabled={approvePending || rejectPending}
-          className="text-xs font-medium px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white rounded-md disabled:opacity-50 transition-colors"
+          name="decision"
+          value="approved"
+          disabled={pending}
+          className="flex-1 text-xs font-medium px-2 py-1.5 bg-sage-600 hover:bg-sage-700 text-white rounded-md disabled:opacity-50 transition-colors"
         >
-          {approvePending ? '…' : 'Approve'}
+          {pending ? '…' : 'Approve'}
         </button>
-      </form>
-      <form action={rejectAction}>
-        <input type="hidden" name="swapId"   value={swapId} />
-        <input type="hidden" name="decision" value="rejected" />
         <button
           type="submit"
-          disabled={approvePending || rejectPending}
-          className="text-xs font-medium px-3 py-1.5 bg-white border border-stone-300 text-stone-700 rounded-md hover:bg-stone-50 disabled:opacity-50 transition-colors"
+          name="decision"
+          value="rejected"
+          disabled={pending}
+          className="flex-1 text-xs font-medium px-2 py-1.5 bg-white border border-stone-300 text-stone-700 rounded-md hover:bg-stone-50 disabled:opacity-50 transition-colors"
         >
-          {rejectPending ? '…' : 'Reject'}
+          {pending ? '…' : 'Reject'}
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
   )
 }

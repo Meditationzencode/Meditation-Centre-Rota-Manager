@@ -52,9 +52,11 @@ export async function updateProfile(_prev: ActionResult | null, formData: FormDa
   const name = (formData.get('name') as string).trim()
   if (!name) return { error: 'Name cannot be empty.' }
 
+  const phone_number = (formData.get('phone') as string ?? '').trim()
+
   const { error } = await supabase
     .from('profiles')
-    .update({ name })
+    .update({ name, phone_number })
     .eq('id', user.id)
 
   if (error) return { error: error.message }
@@ -232,8 +234,9 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const swapId   = formData.get('swapId')   as string
-  const decision = formData.get('decision') as 'approved' | 'rejected'
+  const swapId     = formData.get('swapId')     as string
+  const decision   = formData.get('decision')   as 'approved' | 'rejected'
+  const adminNotes = (formData.get('adminNotes') as string ?? '').trim()
 
   const adminClient = createAdminClient()
   const { data: swap } = await adminClient
@@ -246,7 +249,7 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
 
   const { error } = await adminClient
     .from('shift_swaps')
-    .update({ status: decision, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .update({ status: decision, reviewed_by: user.id, reviewed_at: new Date().toISOString(), admin_notes: adminNotes })
     .eq('id', swapId)
 
   if (error) return { error: error.message }
@@ -277,7 +280,7 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
 
 type SlotPayload = {
   date: string; week_start: string; start_time: string; end_time: string
-  duty: string; location: string; max_volunteers: number; notes: string
+  duty: string; location: string; max_volunteers: number; notes: string; status: string
 }
 
 function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
@@ -288,6 +291,7 @@ function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
   const location  = formData.get('location')      as string
   const maxVols   = parseInt(formData.get('maxVolunteers') as string, 10) || 1
   const notes     = (formData.get('notes') as string).trim()
+  const status    = (formData.get('status') as string) === 'cancelled' ? 'cancelled' : 'open'
 
   if (!date || !startTime || !endTime || !duty || !location)
     return { error: 'All fields except notes are required.' }
@@ -304,6 +308,7 @@ function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
     location,
     max_volunteers: maxVols,
     notes,
+    status,
   }
 }
 
@@ -315,7 +320,7 @@ export async function createSlot(_prev: ActionResult | null, formData: FormData)
   const payload = parseSlotForm(formData)
   if ('error' in payload) return payload
 
-  const { data, error } = await supabase.from('slots').insert(payload).select('id').single()
+  const { data, error } = await supabase.from('slots').insert({ ...payload, created_by: user.id }).select('id').single()
   if (error) return { error: error.message }
 
   await audit(user.id, 'slot.create', 'slot', data?.id ?? null, `Created slot: ${payload.duty} on ${payload.date} at ${payload.location}`)
