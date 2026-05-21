@@ -6,6 +6,23 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getWeekStart } from '@/lib/utils'
 import type { ActionResult, Role } from '@/lib/types'
 
+// ── Audit helper ──────────────────────────────────────────────────────────────
+
+async function audit(
+  userId: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  detail: string,
+) {
+  try {
+    const admin = createAdminClient()
+    await admin.from('audit_log').insert({ user_id: userId, action, entity_type: entityType, entity_id: entityId, detail })
+  } catch {
+    // Non-fatal — never let audit logging break a user action
+  }
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function login(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -53,6 +70,48 @@ export async function updateProfile(_prev: ActionResult | null, formData: FormDa
   return { success: true }
 }
 
+// ── Unavailability ────────────────────────────────────────────────────────────
+
+export async function addUnavailability(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const date = (formData.get('date') as string).trim()
+  const note = (formData.get('note') as string ?? '').trim()
+
+  if (!date) return { error: 'Please select a date.' }
+
+  const { error } = await supabase
+    .from('unavailability')
+    .insert({ user_id: user.id, date, note })
+
+  if (error) {
+    if (error.code === '23505') return { error: 'You have already marked that date as unavailable.' }
+    return { error: error.message }
+  }
+
+  revalidatePath('/profile')
+  return { success: true }
+}
+
+export async function removeUnavailability(id: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('unavailability')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/profile')
+  return { success: true }
+}
+
 // ── Rota sign-up / cancel ─────────────────────────────────────────────────────
 
 export async function signUpForSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -62,7 +121,6 @@ export async function signUpForSlot(_prev: ActionResult | null, formData: FormDa
 
   const slotId = formData.get('slotId') as string
 
-  // Verify capacity (RLS won't catch this; we want a friendly message)
   const { data: slot } = await supabase
     .from('slots')
     .select('max_volunteers, duty, date')
@@ -86,6 +144,7 @@ export async function signUpForSlot(_prev: ActionResult | null, formData: FormDa
     return { error: error.message }
   }
 
+  await audit(user.id, 'signup.add', 'signup', slotId, `Signed up for ${slot.duty} on ${slot.date}`)
   revalidatePath('/rota')
   return { success: true }
 }
@@ -97,6 +156,12 @@ export async function cancelSignup(_prev: ActionResult | null, formData: FormDat
 
   const slotId = formData.get('slotId') as string
 
+  const { data: slot } = await supabase
+    .from('slots')
+    .select('duty, date')
+    .eq('id', slotId)
+    .single()
+
   const { error } = await supabase
     .from('signups')
     .delete()
@@ -105,6 +170,7 @@ export async function cancelSignup(_prev: ActionResult | null, formData: FormDat
 
   if (error) return { error: error.message }
 
+  if (slot) await audit(user.id, 'signup.cancel', 'signup', slotId, `Cancelled signup for ${slot.duty} on ${slot.date}`)
   revalidatePath('/rota')
   return { success: true }
 }
@@ -136,12 +202,16 @@ function parseSlotForm(formData: FormData) {
 
 export async function createSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const payload  = parseSlotForm(formData)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const payload = parseSlotForm(formData)
   if (!payload) return { error: 'All fields except notes are required.' }
 
-  const { error } = await supabase.from('slots').insert(payload)
+  const { data, error } = await supabase.from('slots').insert(payload).select('id').single()
   if (error) return { error: error.message }
 
+  await audit(user.id, 'slot.create', 'slot', data?.id ?? null, `Created slot: ${payload.duty} on ${payload.date} at ${payload.location}`)
   revalidatePath('/rota')
   revalidatePath('/admin/schedule')
   redirect('/admin/schedule')
@@ -149,13 +219,17 @@ export async function createSlot(_prev: ActionResult | null, formData: FormData)
 
 export async function updateSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
-  const id       = formData.get('id') as string
-  const payload  = parseSlotForm(formData)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const id      = formData.get('id') as string
+  const payload = parseSlotForm(formData)
   if (!payload) return { error: 'All fields except notes are required.' }
 
   const { error } = await supabase.from('slots').update(payload).eq('id', id)
   if (error) return { error: error.message }
 
+  await audit(user.id, 'slot.update', 'slot', id, `Updated slot: ${payload.duty} on ${payload.date}`)
   revalidatePath('/rota')
   revalidatePath('/admin/schedule')
   redirect('/admin/schedule')
@@ -163,8 +237,14 @@ export async function updateSlot(_prev: ActionResult | null, formData: FormData)
 
 export async function deleteSlot(slotId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: slot } = await supabase.from('slots').select('duty, date').eq('id', slotId).single()
   const { error } = await supabase.from('slots').delete().eq('id', slotId)
   if (error) return { error: error.message }
+
+  if (slot) await audit(user.id, 'slot.delete', 'slot', slotId, `Deleted slot: ${slot.duty} on ${slot.date}`)
   revalidatePath('/rota')
   revalidatePath('/admin/schedule')
   return { success: true }
@@ -190,10 +270,11 @@ export async function createMember(_prev: ActionResult | null, formData: FormDat
 
   if (error) return { error: error.message }
 
-  // Profile row is created by the trigger, but set the role explicitly
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   await supabase.from('profiles').update({ name, role }).eq('id', data.user.id)
 
+  if (user) await audit(user.id, 'member.create', 'member', data.user.id, `Created member: ${name} (${role})`)
   revalidatePath('/admin/members')
   redirect('/admin/members')
 }
@@ -207,6 +288,8 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
   if (!name || !role) return { error: 'Name and role are required.' }
 
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { error } = await supabase
     .from('profiles')
     .update({ name, role, active })
@@ -221,25 +304,37 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
     if (pwErr) return { error: pwErr.message }
   }
 
+  if (user) await audit(user.id, 'member.update', 'member', id, `Updated member: ${name} → role=${role}, active=${active}`)
   revalidatePath('/admin/members')
   redirect('/admin/members')
 }
 
 export async function toggleMemberActive(memberId: string, active: boolean): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { error } = await supabase
     .from('profiles')
     .update({ active: !active })
     .eq('id', memberId)
+
   if (error) return { error: error.message }
+
+  if (user) await audit(user.id, active ? 'member.deactivate' : 'member.activate', 'member', memberId, `${active ? 'Deactivated' : 'Activated'} member`)
   revalidatePath('/admin/members')
   return { success: true }
 }
 
 export async function deleteMember(memberId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data: profile } = await supabase.from('profiles').select('name').eq('id', memberId).single()
   const admin = createAdminClient()
   const { error } = await admin.auth.admin.deleteUser(memberId)
   if (error) return { error: error.message }
+
+  if (user) await audit(user.id, 'member.delete', 'member', memberId, `Deleted member: ${profile?.name ?? memberId}`)
   revalidatePath('/admin/members')
   return { success: true }
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ProfileForm from './profile-form'
+import UnavailabilityForm from './unavailability-form'
 
 export const metadata: Metadata = { title: 'My Profile' }
 
@@ -16,12 +17,16 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: signups }] = await Promise.all([
+  const [{ data: profile }, { data: signups }, { data: unavailability }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('signups')
       .select('*, slot:slots(*)')
       .eq('user_id', user.id)
       .order('signed_up_at'),
+    supabase.from('unavailability')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date'),
   ])
 
   if (!profile) redirect('/login')
@@ -56,6 +61,9 @@ export default async function ProfilePage() {
 
         {/* Edit form */}
         <ProfileForm name={profile.name} />
+
+        {/* Unavailability */}
+        <UnavailabilityForm entries={unavailability ?? []} />
 
         {/* Upcoming sign-ups */}
         <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">

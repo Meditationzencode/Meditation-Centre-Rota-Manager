@@ -33,6 +33,26 @@ export interface SlotWithSignups extends Slot {
   signups: (Signup & { profile: Pick<Profile, 'id' | 'name'> })[]
 }
 
+export interface Unavailability {
+  id: string
+  user_id: string
+  date: string   // YYYY-MM-DD
+  note: string
+  created_at: string
+}
+
+export interface AuditEntry {
+  id: string
+  user_id: string | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  detail: string
+  created_at: string
+  // joined
+  profile?: Pick<Profile, 'name'> | null
+}
+
 export type ActionResult = { error: string } | { success: true }
 
 export const DUTIES = [
