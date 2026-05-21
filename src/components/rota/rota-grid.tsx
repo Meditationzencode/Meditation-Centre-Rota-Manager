@@ -104,7 +104,9 @@ function SlotCard({
         </span>
       </div>
 
-      <p className="font-semibold text-stone-800 leading-tight">{slot.duty}</p>
+      <Link href={`/rota/${slot.id}`} className="font-semibold text-stone-800 leading-tight hover:text-teal-700 transition-colors block">
+        {slot.duty}
+      </Link>
       <p className="text-stone-400 flex items-center gap-0.5">
         <span>📍</span> {slot.location}
       </p>
