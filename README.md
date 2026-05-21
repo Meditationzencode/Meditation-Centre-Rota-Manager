@@ -1,10 +1,12 @@
-# Sangha Rota
+# Meditation Centre Rota Manager
 
-**Volunteer rota management for Bodhi Grove Meditation Centre**
+**A full-stack rota management web application for a Buddhist meditation centre.**
 
 🔗 **Live demo: [sangha-rota.vercel.app](https://sangha-rota.vercel.app)**
 
-A full-stack web application built with Next.js, TypeScript, Supabase, and Tailwind CSS. All data is entirely fictional — no real organisation information is included.
+Meditation Centre Rota Manager is a database-backed scheduling web application designed to replace spreadsheet-based rota management for a Buddhist meditation centre. The application supports user authentication, role-based access, shift creation, volunteer availability, weekly and monthly rota views, and admin tools. It is designed with privacy, maintainability, and real-world usability in mind.
+
+All data is entirely fictional — no real organisation information is included.
 
 ---
 
