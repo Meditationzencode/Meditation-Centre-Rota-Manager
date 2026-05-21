@@ -4,7 +4,7 @@
 
 🔗 **Live demo: [sangha-rota.vercel.app](https://sangha-rota.vercel.app/login)**
 
-Meditation Centre Rota Manager is a database-backed scheduling web application designed to replace spreadsheet-based rota management for a Buddhist meditation centre. The application supports user authentication, role-based access, shift creation, volunteer availability, weekly and monthly rota views, and admin tools. It is designed with privacy, maintainability, and real-world usability in mind.
+Meditation Centre Rota Manager is a database-backed scheduling web application designed to replace spreadsheet-based rota management for a Buddhist meditation centre. The application supports user authentication, role-based access control, shift creation, volunteer availability, weekly and monthly rota views, shift swap requests, and admin tools. It is designed with privacy, maintainability, and real-world usability in mind.
 
 All data is entirely fictional — no real organisation information is included.
 
@@ -32,13 +32,18 @@ All data is entirely fictional — no real organisation information is included.
 
 ## Features
 
-- **Authentication** — Supabase Auth with session cookies (SSR-safe)
-- **Role-based access** — three roles enforced in middleware, UI, and at database level via Row Level Security
-- **Weekly rota calendar** — browse by week, view duties, locations, sign-up counts
+- **Authentication** — Supabase Auth with session cookies (SSR-safe); password hashing handled by Supabase's bcrypt-based auth
+- **Role-based access** — four roles (admin, coordinator, volunteer, viewer) enforced in middleware, UI, and at the database level via Row Level Security
+- **Weekly rota calendar** — browse by week, view duties, locations, sign-up counts; interactive sign-up and cancel
+- **Monthly rota calendar** — full month grid view with slot previews per day; click any day to jump to that week
 - **Volunteer sign-up / cancel** — one-click via React Server Actions
-- **Schedule management** — coordinators & admins create, edit, delete slots
-- **Member management** — admins create accounts, change roles, activate/deactivate
-- **Profile page** — update name and password
+- **Shift swap requests** — volunteers request swaps; admins approve (auto-cancels the signup) or reject; full audit trail
+- **Volunteer availability** — volunteers submit unavailability by date range and time
+- **Schedule management** — coordinators and admins create, edit, and delete slots with validated forms
+- **Member management** — admins create accounts, assign roles, and activate or deactivate users
+- **Admin dashboard** — stat cards for members, active volunteers, pending swap requests, and unassigned upcoming slots
+- **Form validation** — required fields, valid email format, start time before end time (client-side and server-side), minimum password length
+- **Audit log** — every significant action is recorded with the acting user and timestamp
 
 ---
 
@@ -56,7 +61,7 @@ npm install
 
 1. Go to [supabase.com](https://supabase.com) and create a free project.
 2. In **Project Settings → API**, copy your **Project URL** and **anon key**.
-3. Also copy the **service role key** (needed for admin user creation).
+3. Also copy the **service role key** (needed for admin user creation and swap approvals).
 
 ### 3. Configure environment variables
 
@@ -72,13 +77,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
+These variables are never committed to version control. The anon key is safe to expose to the browser; the service role key is server-side only.
+
 ### 4. Run the database setup
 
 In the **Supabase SQL Editor**, run these files in order:
 
 ```
-supabase/schema.sql   ← creates tables, indexes, and the auto-profile trigger
-supabase/rls.sql      ← enables Row Level Security and sets all policies
+supabase/schema.sql       ← tables, indexes, and the auto-profile trigger
+supabase/rls.sql          ← Row Level Security policies
+supabase/shift-swaps.sql  ← shift_swaps table and its RLS policies
 ```
 
 ### 5. Seed the database
@@ -124,13 +132,17 @@ Set the **Site URL** in Supabase Dashboard → Authentication → URL Configurat
 
 ## Role permissions
 
-| Feature                         | Admin | Coordinator | Volunteer |
-|---------------------------------|:-----:|:-----------:|:---------:|
-| View rota                       | ✓     | ✓           | ✓         |
-| Sign up for / cancel slots      | ✓     | ✓           | ✓         |
-| Create / edit / delete slots    | ✓     | ✓           | –         |
-| View all member accounts        | ✓     | –           | –         |
-| Create / edit / delete accounts | ✓     | –           | –         |
+| Feature                              | Admin | Coordinator | Volunteer | Viewer |
+|--------------------------------------|:-----:|:-----------:|:---------:|:------:|
+| View rota (weekly and monthly)       | ✓     | ✓           | ✓         | ✓      |
+| Sign up for / cancel slots           | ✓     | ✓           | ✓         | –      |
+| Request shift swaps                  | ✓     | ✓           | ✓         | –      |
+| Submit unavailability                | ✓     | ✓           | ✓         | –      |
+| Create / edit / delete slots         | ✓     | ✓           | –         | –      |
+| Approve / reject swap requests       | ✓     | –           | –         | –      |
+| View all member accounts             | ✓     | –           | –         | –      |
+| Create / edit / delete accounts      | ✓     | –           | –         | –      |
+| View audit log                       | ✓     | –           | –         | –      |
 
 ---
 
@@ -141,21 +153,24 @@ src/
 ├── app/
 │   ├── (auth)/login/          ← sign-in page (no nav)
 │   ├── (app)/                 ← protected layout with nav + footer
-│   │   ├── dashboard/
+│   │   ├── dashboard/         ← overview with stat cards
 │   │   ├── rota/              ← weekly calendar view
+│   │   │   └── month/         ← monthly calendar view
 │   │   ├── admin/
 │   │   │   ├── schedule/      ← slot management (coordinator + admin)
-│   │   │   └── members/       ← user management (admin only)
+│   │   │   ├── members/       ← user management (admin only)
+│   │   │   ├── swaps/         ← swap request review (admin only)
+│   │   │   └── activity/      ← audit log (admin only)
 │   │   └── profile/
 │   ├── api/auth/callback/     ← Supabase OAuth redirect handler
 │   ├── layout.tsx             ← root HTML + fonts
 │   └── globals.css
 ├── components/
-│   ├── nav.tsx                ← sticky nav with user dropdown
-│   ├── rota/rota-grid.tsx     ← 7-column interactive calendar
-│   └── ui/badge.tsx
+│   ├── nav.tsx                ← sticky nav with role badge and user dropdown
+│   ├── rota/rota-grid.tsx     ← 7-column interactive weekly calendar
+│   └── ui/badge.tsx           ← role badge component
 ├── lib/
-│   ├── actions.ts             ← all Server Actions (auth, rota, admin)
+│   ├── actions.ts             ← all Server Actions (auth, rota, admin, swaps)
 │   ├── supabase/
 │   │   ├── client.ts          ← browser Supabase client
 │   │   └── server.ts          ← server + admin Supabase clients
@@ -166,16 +181,21 @@ src/
 supabase/
 ├── schema.sql                 ← tables, indexes, auto-profile trigger
 ├── rls.sql                    ← Row Level Security policies
+├── shift-swaps.sql            ← shift_swaps table and RLS
 └── seed.sql                   ← demo rota data
 ```
 
-## Security notes
+## Security
 
-- **Row Level Security** is enabled on all tables — Supabase enforces access at the database level regardless of application code.
-- The `my_role()` helper function runs with `SECURITY DEFINER` to safely read the caller's role.
-- The service role key is server-side only and never exposed to the browser.
-- Session cookies are `httpOnly` and `sameSite: lax`, managed by `@supabase/ssr`.
-- Volunteers cannot escalate their own role — the RLS `UPDATE` policy on profiles checks the current role before allowing changes.
+- **Password hashing** — Supabase Auth uses bcrypt internally; plaintext passwords are never stored or logged.
+- **Environment variables** — secret keys (`SUPABASE_SERVICE_ROLE_KEY`) are server-side only and excluded from the browser bundle. The `.env.local` file is in `.gitignore` and never committed.
+- **Row Level Security** — RLS is enabled on every table. Database access is enforced at the Postgres level regardless of application code, so a bug in server logic cannot leak another user's data.
+- **Service role key scoping** — the admin (service role) client is only instantiated in server-side code for operations that legitimately require bypassing RLS (creating users, approving swaps). It is never accessible to the browser.
+- **Protected admin routes** — middleware redirects unauthenticated requests to `/login`. Role checks in every server component and server action prevent privilege escalation; e.g. only admins can reach `/admin/members` and `/admin/swaps`.
+- **Form validation** — all forms validate required fields, email format, and time ordering (start before end) on both the client and server. Server Actions re-validate every input before touching the database.
+- **Role immutability** — the `my_role()` SECURITY DEFINER function prevents volunteers from reading or modifying their own role via RLS policy bypass.
+- **No secrets in version control** — `.env.local` and any file matching `.env*.local` are gitignored. The repository contains only `.env.local.example` with placeholder values.
+- **Session cookies** — managed by `@supabase/ssr` with `httpOnly` and `sameSite: lax` attributes; not accessible to JavaScript.
 
 ---
 

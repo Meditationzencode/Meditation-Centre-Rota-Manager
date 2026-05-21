@@ -71,14 +71,22 @@ export default async function RotaPage({
             <h1 className="font-serif text-3xl font-medium">Rota</h1>
             <p className="text-stone-500 text-sm mt-1">{weekLabel}</p>
           </div>
-          {isManager && (
-            <Link
-              href="/admin/schedule/new"
-              className="bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
-            >
-              + Add Slot
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-md border border-stone-200 overflow-hidden text-sm">
+              <span className="px-3 py-1.5 bg-sage-600 text-white font-medium">Week</span>
+              <Link href="/rota/month" className="px-3 py-1.5 text-stone-600 hover:bg-stone-50 border-l border-stone-200 transition-colors">
+                Month
+              </Link>
+            </div>
+            {isManager && (
+              <Link
+                href="/admin/schedule/new"
+                className="bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+              >
+                + Add Slot
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 

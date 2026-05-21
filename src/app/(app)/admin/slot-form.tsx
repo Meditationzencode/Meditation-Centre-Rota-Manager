@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { createSlot, updateSlot } from '@/lib/actions'
 import { DUTIES, LOCATIONS, type ActionResult, type Slot } from '@/lib/types'
 
@@ -9,13 +9,28 @@ interface Props { slot: Slot | null }
 export default function SlotForm({ slot }: Props) {
   const action = slot ? updateSlot : createSlot
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(action, null)
-  const error = state && 'error' in state ? state.error : null
+  const [timeError, setTimeError] = useState<string | null>(null)
+  const error = timeError ?? (state && 'error' in state ? state.error : null)
 
   const fieldCls = 'w-full border border-stone-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent'
   const labelCls = 'block text-sm font-medium text-stone-700 mb-1'
 
   return (
-    <form action={formAction} className="bg-white border border-stone-200 rounded-xl shadow-sm p-6 space-y-5">
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        const f = e.currentTarget
+        const start = (f.elements.namedItem('startTime') as HTMLInputElement)?.value
+        const end   = (f.elements.namedItem('endTime')   as HTMLInputElement)?.value
+        if (start && end && start >= end) {
+          e.preventDefault()
+          setTimeError('Start time must be before end time.')
+        } else {
+          setTimeError(null)
+        }
+      }}
+      className="bg-white border border-stone-200 rounded-xl shadow-sm p-6 space-y-5"
+    >
       {slot && <input type="hidden" name="id" value={slot.id} />}
 
       {error && (

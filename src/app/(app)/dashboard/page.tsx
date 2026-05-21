@@ -11,12 +11,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profile, { data: allSlots }, { data: allSignups }, { data: allProfiles }] =
+  const [profile, { data: allSlots }, { data: allSignups }, { data: allProfiles }, { count: pendingSwapCount }] =
     await Promise.all([
       getProfileForUser(user.id),
       supabase.from('slots').select('*').order('date').order('start_time'),
       supabase.from('signups').select('*'),
       supabase.from('profiles').select('id, role, active'),
+      supabase.from('shift_swaps').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     ])
 
   if (!profile) redirect('/auth-error?reason=missing_profile')
@@ -49,10 +50,13 @@ export default async function DashboardPage() {
     .slice(0, 6)
 
   const stats = isManager ? {
-    members:    (allProfiles ?? []).length,
-    slots:      (allSlots ?? []).length,
-    signups:    (allSignups ?? []).length,
-    volunteers: (allProfiles ?? []).filter(p => p.role === 'volunteer' && p.active).length,
+    members:         (allProfiles ?? []).length,
+    volunteers:      (allProfiles ?? []).filter(p => p.role === 'volunteer' && p.active).length,
+    pendingSwaps:    pendingSwapCount ?? 0,
+    unassignedSlots: (allSlots ?? []).filter(s =>
+      s.date >= today &&
+      (allSignups ?? []).filter(sig => sig.slot_id === s.id).length === 0,
+    ).length,
   } : null
 
   return (
@@ -90,20 +94,30 @@ export default async function DashboardPage() {
         {stats && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Members',    value: stats.members,    icon: '👤' },
-              { label: 'Rota Slots', value: stats.slots,      icon: '📅' },
-              { label: 'Sign-ups',   value: stats.signups,    icon: '✓'  },
-              { label: 'Volunteers', value: stats.volunteers, icon: '🤝' },
+              { label: 'Members',          value: stats.members,         icon: '👤', href: '/admin/members',  alert: false },
+              { label: 'Active Volunteers',value: stats.volunteers,      icon: '🤝', href: '/admin/members',  alert: false },
+              { label: 'Pending Swaps',    value: stats.pendingSwaps,    icon: '🔄', href: '/admin/swaps',    alert: stats.pendingSwaps > 0 },
+              { label: 'Unassigned Slots', value: stats.unassignedSlots, icon: '📋', href: '/admin/schedule', alert: stats.unassignedSlots > 0 },
             ].map(s => (
-              <div key={s.label} className="bg-white border border-stone-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-lg flex-shrink-0">
+              <Link
+                key={s.label}
+                href={s.href}
+                className={`bg-white border rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow transition-shadow ${
+                  s.alert ? 'border-amber-300' : 'border-stone-200'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${
+                  s.alert ? 'bg-amber-50' : 'bg-stone-100'
+                }`}>
                   {s.icon}
                 </div>
                 <div>
-                  <div className="text-2xl font-serif font-semibold leading-none">{s.value}</div>
+                  <div className={`text-2xl font-serif font-semibold leading-none ${s.alert ? 'text-amber-700' : ''}`}>
+                    {s.value}
+                  </div>
                   <div className="text-xs text-stone-500 mt-0.5">{s.label}</div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

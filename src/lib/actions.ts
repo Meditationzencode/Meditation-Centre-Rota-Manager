@@ -242,7 +242,12 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
 
 // ── Slots (admin / coordinator) ───────────────────────────────────────────────
 
-function parseSlotForm(formData: FormData) {
+type SlotPayload = {
+  date: string; week_start: string; start_time: string; end_time: string
+  duty: string; location: string; max_volunteers: number; notes: string
+}
+
+function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
   const date      = formData.get('date')          as string
   const startTime = formData.get('startTime')     as string
   const endTime   = formData.get('endTime')       as string
@@ -251,7 +256,11 @@ function parseSlotForm(formData: FormData) {
   const maxVols   = parseInt(formData.get('maxVolunteers') as string, 10) || 1
   const notes     = (formData.get('notes') as string).trim()
 
-  if (!date || !startTime || !endTime || !duty || !location) return null
+  if (!date || !startTime || !endTime || !duty || !location)
+    return { error: 'All fields except notes are required.' }
+
+  if (startTime >= endTime)
+    return { error: 'Start time must be before end time.' }
 
   return {
     date,
@@ -271,7 +280,7 @@ export async function createSlot(_prev: ActionResult | null, formData: FormData)
   if (!user) redirect('/login')
 
   const payload = parseSlotForm(formData)
-  if (!payload) return { error: 'All fields except notes are required.' }
+  if ('error' in payload) return payload
 
   const { data, error } = await supabase.from('slots').insert(payload).select('id').single()
   if (error) return { error: error.message }
@@ -289,7 +298,7 @@ export async function updateSlot(_prev: ActionResult | null, formData: FormData)
 
   const id      = formData.get('id') as string
   const payload = parseSlotForm(formData)
-  if (!payload) return { error: 'All fields except notes are required.' }
+  if ('error' in payload) return payload
 
   const { error } = await supabase.from('slots').update(payload).eq('id', id)
   if (error) return { error: error.message }

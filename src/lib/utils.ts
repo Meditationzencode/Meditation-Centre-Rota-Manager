@@ -36,3 +36,22 @@ export function fmtTime(t: string): string {
 export function clsx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ')
 }
+
+/** Returns "YYYY-MM-01" for the month containing the given date */
+export function getMonthStart(input: string | Date): string {
+  const iso = typeof input === 'string' ? input : input.toISOString()
+  return iso.slice(0, 7) + '-01'
+}
+
+/** Add/subtract months from a month-start string (YYYY-MM-01) */
+export function addMonths(monthStart: string, n: number): string {
+  const [y, m] = monthStart.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 10)
+}
+
+/** "May 2026" */
+export function fmtMonthYear(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
+    month: 'long', year: 'numeric', timeZone: 'UTC',
+  })
+}
