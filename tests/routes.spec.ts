@@ -33,8 +33,10 @@ test.describe('Public routes', () => {
   for (const route of PUBLIC_ROUTES) {
     test(`${route} is accessible without login`, async ({ page }) => {
       const response = await page.goto(route)
-      // Should not be redirected to /login
-      await expect(page).not.toHaveURL(/\/login/)
+      // /login itself is at /login — only check redirect for other public routes
+      if (route !== '/login') {
+        await expect(page).not.toHaveURL(/\/login/)
+      }
       expect(response?.status()).toBeLessThan(500)
     })
   }

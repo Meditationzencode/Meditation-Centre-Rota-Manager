@@ -14,24 +14,26 @@ test.describe('Volunteer availability', () => {
     await page.goto('/profile')
 
     // Use a far-future date unlikely to conflict
-    await page.fill('input[name="date"]', '2099-12-25')
-    await page.getByRole('button', { name: /mark unavailable/i }).click()
+    await page.fill('input[name="date"]', '2099-11-10')
+    await page.getByRole('button', { name: /add date/i }).click()
 
-    // Entry should appear in the list
-    await expect(page.getByText('25 Dec 2099')).toBeVisible({ timeout: 8_000 })
+    // The date appears formatted as "Mon 10 Nov" (en-GB, no year, weekday short)
+    await expect(page.getByText(/10.*nov/i)).toBeVisible({ timeout: 8_000 })
   })
 
   test('marking the same date twice shows an error', async ({ page }) => {
     await loginAs(page, 'volunteer')
     await page.goto('/profile')
 
-    await page.fill('input[name="date"]', '2099-12-25')
-    await page.getByRole('button', { name: /mark unavailable/i }).click()
-    await page.waitForTimeout(1000)
+    // First submission
+    await page.fill('input[name="date"]', '2099-11-20')
+    await page.getByRole('button', { name: /add date/i }).click()
+    // Wait for the entry to appear before trying again
+    await expect(page.getByText(/20.*nov/i)).toBeVisible({ timeout: 8_000 })
 
-    await page.fill('input[name="date"]', '2099-12-25')
-    await page.getByRole('button', { name: /mark unavailable/i }).click()
-
+    // Second submission — same date should error
+    await page.fill('input[name="date"]', '2099-11-20')
+    await page.getByRole('button', { name: /add date/i }).click()
     await expect(page.getByText(/already marked/i)).toBeVisible({ timeout: 8_000 })
   })
 })

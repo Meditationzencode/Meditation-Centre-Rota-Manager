@@ -26,7 +26,6 @@ test.describe('Admin-only routes', () => {
   test('volunteer is redirected away from /admin/members', async ({ page }) => {
     await loginAs(page, 'volunteer')
     await page.goto('/admin/members')
-    // Should be bounced to /dashboard (non-admin redirect in page)
     await expect(page).not.toHaveURL(/admin\/members/)
   })
 
@@ -40,14 +39,17 @@ test.describe('Admin-only routes', () => {
 test.describe('Role indicators', () => {
   test('admin nav shows Members, Swaps, and Activity links', async ({ page }) => {
     await loginAs(page, 'admin')
-    await expect(page.getByRole('link', { name: 'Members' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Swaps'   })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Activity'})).toBeVisible()
+    // Scope to the desktop <nav> element to avoid collisions with page content
+    const nav = page.locator('header nav')
+    await expect(nav.getByRole('link', { name: 'Members'  })).toBeVisible({ timeout: 10_000 })
+    await expect(nav.getByRole('link', { name: 'Swaps'    })).toBeVisible({ timeout: 10_000 })
+    await expect(nav.getByRole('link', { name: 'Activity' })).toBeVisible({ timeout: 10_000 })
   })
 
   test('volunteer nav does not show admin links', async ({ page }) => {
     await loginAs(page, 'volunteer')
-    await expect(page.getByRole('link', { name: 'Members'  })).not.toBeVisible()
-    await expect(page.getByRole('link', { name: 'Activity' })).not.toBeVisible()
+    const nav = page.locator('header nav')
+    await expect(nav.getByRole('link', { name: 'Members'  })).not.toBeVisible()
+    await expect(nav.getByRole('link', { name: 'Activity' })).not.toBeVisible()
   })
 })
