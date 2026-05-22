@@ -66,6 +66,41 @@ test.describe('Shift CRUD (admin)', () => {
     await expect(page.locator('input[name="date"]')).toBeVisible({ timeout: 10_000 })
     await expect(page.locator('select[name="status"]')).toBeVisible()
   })
+
+  test('admin can delete a slot', async ({ page }) => {
+    await loginAs(page, 'admin')
+
+    // Create a slot at a unique date so we can find and delete it
+    await page.goto('/admin/schedule/new')
+    await page.fill('input[name="date"]',              '2099-08-31')
+    await page.selectOption('select[name="duty"]',     'Garden Maintenance')
+    await page.fill('input[name="startTime"]',         '09:00')
+    await page.fill('input[name="endTime"]',           '11:00')
+    await page.selectOption('select[name="location"]', 'Gardens')
+    await page.click('button[type="submit"]')
+    await page.waitForURL('**/admin/schedule', { timeout: 20_000 })
+
+    // Find the row we just created by its date text ("31 Aug")
+    await page.waitForLoadState('networkidle')
+    const row = page.locator('tbody tr').filter({ hasText: '31 Aug' }).first()
+    await expect(row).toBeVisible({ timeout: 10_000 })
+
+    // Accept the confirm dialog, then click Delete
+    page.once('dialog', dialog => dialog.accept())
+    await row.getByRole('button', { name: 'Delete' }).click()
+
+    // Row should disappear after the server action completes
+    await expect(row).not.toBeVisible({ timeout: 10_000 })
+  })
+
+  test('shift form rejects missing required fields', async ({ page }) => {
+    await loginAs(page, 'admin')
+    await page.goto('/admin/schedule/new')
+    // Submit without filling any required fields
+    await page.click('button[type="submit"]')
+    // Browser HTML5 validation prevents the form from submitting — URL stays on /new
+    await expect(page).toHaveURL(/\/admin\/schedule\/new/)
+  })
 })
 
 test.describe('Shift detail page', () => {

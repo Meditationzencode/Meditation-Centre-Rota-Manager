@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { loginAs } from './helpers'
+import { loginAs, VIEWER_EMAIL } from './helpers'
 
 test.describe('Admin-only routes', () => {
   test('admin can access /admin/members', async ({ page }) => {
@@ -51,5 +51,32 @@ test.describe('Role indicators', () => {
     const nav = page.locator('header nav')
     await expect(nav.getByRole('link', { name: 'Members'  })).not.toBeVisible()
     await expect(nav.getByRole('link', { name: 'Activity' })).not.toBeVisible()
+  })
+})
+
+test.describe('Shift creation permissions', () => {
+  test('admin can access the create-slot form', async ({ page }) => {
+    await loginAs(page, 'admin')
+    await page.goto('/admin/schedule/new')
+    await expect(page).toHaveURL(/admin\/schedule\/new/)
+    await expect(page.locator('input[name="date"]')).toBeVisible()
+  })
+
+  test('volunteer is redirected away from the create-slot form', async ({ page }) => {
+    await loginAs(page, 'volunteer')
+    await page.goto('/admin/schedule/new')
+    await expect(page).not.toHaveURL(/admin\/schedule\/new/)
+  })
+
+  test('viewer cannot sign up for shifts on the rota', async ({ page }) => {
+    // Skipped when TEST_VIEWER_EMAIL is not set.
+    // To enable: create a member with role=Viewer in Admin → Members,
+    // then export TEST_VIEWER_EMAIL=viewer@bodhigrove.demo before running tests.
+    test.skip(!VIEWER_EMAIL, 'Set TEST_VIEWER_EMAIL to enable viewer permission tests')
+    await loginAs(page, 'viewer')
+    await page.goto('/rota')
+    await page.waitForLoadState('networkidle')
+    // Viewer role sets canSignUp=false; the "Sign up" button must not appear at all
+    await expect(page.getByRole('button', { name: 'Sign up' })).not.toBeVisible()
   })
 })
