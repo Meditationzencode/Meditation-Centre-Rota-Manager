@@ -362,6 +362,63 @@ export async function deleteSlot(slotId: string): Promise<ActionResult> {
   return { success: true }
 }
 
+// ── Admin volunteer assignment ────────────────────────────────────────────────
+
+export async function adminAssignVolunteer(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!profile || !['admin', 'coordinator'].includes(profile.role)) return { error: 'Not authorised.' }
+
+  const slotId  = formData.get('slotId')  as string
+  const userId  = formData.get('userId')  as string
+  if (!slotId || !userId) return { error: 'Missing slot or volunteer.' }
+
+  const { data: slot } = await supabase.from('slots').select('max_volunteers, duty, date').eq('id', slotId).single()
+  if (!slot) return { error: 'Slot not found.' }
+
+  const { count } = await supabase.from('signups').select('*', { count: 'exact', head: true }).eq('slot_id', slotId)
+  if ((count ?? 0) >= slot.max_volunteers) return { error: 'This slot is already full.' }
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('signups').insert({ slot_id: slotId, user_id: userId })
+  if (error) {
+    if (error.code === '23505') return { error: 'That volunteer is already signed up.' }
+    return { error: error.message }
+  }
+
+  await audit(user.id, 'admin.assign', 'signup', slotId, `Admin assigned volunteer to ${slot.duty} on ${slot.date}`)
+  revalidatePath(`/admin/schedule/${slotId}/edit`)
+  revalidatePath('/rota')
+  return { success: true }
+}
+
+export async function adminRemoveVolunteer(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!profile || !['admin', 'coordinator'].includes(profile.role)) return { error: 'Not authorised.' }
+
+  const slotId = formData.get('slotId') as string
+  const userId = formData.get('userId') as string
+  if (!slotId || !userId) return { error: 'Missing slot or volunteer.' }
+
+  const { data: slot } = await supabase.from('slots').select('duty, date').eq('id', slotId).single()
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('signups').delete().eq('slot_id', slotId).eq('user_id', userId)
+  if (error) return { error: error.message }
+
+  if (slot) await audit(user.id, 'admin.remove', 'signup', slotId, `Admin removed volunteer from ${slot.duty} on ${slot.date}`)
+  revalidatePath(`/admin/schedule/${slotId}/edit`)
+  revalidatePath('/rota')
+  return { success: true }
+}
+
 // ── Members (admin only) ──────────────────────────────────────────────────────
 
 export async function createMember(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

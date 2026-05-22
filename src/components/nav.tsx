@@ -38,9 +38,10 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
       : []),
     ...(profile.role === 'admin'
       ? [
-          { href: '/admin/members',  label: 'Members'  },
-          { href: '/admin/swaps',    label: 'Swaps'    },
-          { href: '/admin/activity', label: 'Activity' },
+          { href: '/admin/members',       label: 'Members'      },
+          { href: '/admin/availability',  label: 'Availability' },
+          { href: '/admin/swaps',         label: 'Swaps'        },
+          { href: '/admin/activity',      label: 'Activity'     },
         ]
       : []),
   ]

@@ -8,6 +8,22 @@ Meditation Centre Rota Manager is a database-backed scheduling web application d
 
 All data is entirely fictional — no real organisation information is included.
 
+## Screenshots
+
+| Dashboard | Weekly rota |
+|-----------|-------------|
+| ![Dashboard](public/screenshots/dashboard.png) | ![Weekly rota](public/screenshots/rota-weekly.png) |
+
+| Monthly rota | Shift detail |
+|--------------|--------------|
+| ![Monthly rota](public/screenshots/rota-monthly.png) | ![Shift detail](public/screenshots/slot-detail.png) |
+
+| Manage schedule | Member management |
+|-----------------|-------------------|
+| ![Schedule](public/screenshots/admin-schedule.png) | ![Members](public/screenshots/admin-members.png) |
+
+---
+
 ### Try the live demo
 
 | Role | Email | Password |
@@ -196,6 +212,55 @@ supabase/
 - **Role immutability** — the `my_role()` SECURITY DEFINER function prevents volunteers from reading or modifying their own role via RLS policy bypass.
 - **No secrets in version control** — `.env.local` and any file matching `.env*.local` are gitignored. The repository contains only `.env.local.example` with placeholder values.
 - **Session cookies** — managed by `@supabase/ssr` with `httpOnly` and `sameSite: lax` attributes; not accessible to JavaScript.
+
+---
+
+## Running the tests
+
+The project ships with a full end-to-end test suite (39 tests) built with [Playwright](https://playwright.dev/).
+
+### Prerequisites
+
+The tests hit `http://localhost:3000` by default, so the dev server must be running:
+
+```bash
+npm run dev
+```
+
+The demo accounts must also exist in your Supabase project — run `npm run setup` to create them.
+
+### Commands
+
+```bash
+npm test              # headless, all tests (single worker)
+npm run test:ui       # interactive Playwright UI
+npm run test:report   # view the last HTML report
+```
+
+### Test accounts
+
+| Env var | Default value |
+|---------|---------------|
+| `TEST_ADMIN_EMAIL` | `admin@bodhigrove.demo` |
+| `TEST_ADMIN_PASSWORD` | `Demo1234!` |
+| `TEST_VOL_EMAIL` | `vol1@bodhigrove.demo` |
+| `TEST_VOL_PASSWORD` | `Demo1234!` |
+
+Override any of these as environment variables before running tests. The base URL can be changed with `PLAYWRIGHT_BASE_URL`.
+
+---
+
+## Future improvements
+
+- **Conflict detection** — warn when a volunteer is already assigned to an overlapping slot on the same day
+- **Waiting list** — when a slot is full, let volunteers join a queue and be notified if a space opens
+- **Volunteer preference matching** — volunteers set preferred duties or times; admin sees suggestions when assigning
+- **Bulk slot import** — CSV upload to create multiple slots at once for a new term or retreat
+- **Push notifications** — browser push API or SMS for shift reminders the day before
+- **Mobile PWA** — add a web app manifest so volunteers can install the rota on their home screen
+- **Multi-centre support** — namespace slots, members, and templates under separate organisations
+- **Shift notes from volunteers** — free-text field volunteers fill in after completing a shift
+- **Recurring unavailability** — mark a recurring day (e.g. every Tuesday) rather than individual dates
 
 ---
 
