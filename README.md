@@ -201,7 +201,7 @@ supabase/
 └── seed.sql                   ← demo rota data
 ```
 
-## Security
+## Security and Privacy
 
 - **Password hashing** — Supabase Auth uses bcrypt internally; plaintext passwords are never stored or logged.
 - **Environment variables** — secret keys (`SUPABASE_SERVICE_ROLE_KEY`) are server-side only and excluded from the browser bundle. The `.env.local` file is in `.gitignore` and never committed.
@@ -212,19 +212,20 @@ supabase/
 - **Role immutability** — the `my_role()` SECURITY DEFINER function prevents volunteers from reading or modifying their own role via RLS policy bypass.
 - **No secrets in version control** — `.env.local` and any file matching `.env*.local` are gitignored. The repository contains only `.env.local.example` with placeholder values.
 - **Session cookies** — managed by `@supabase/ssr` with `httpOnly` and `sameSite: lax` attributes; not accessible to JavaScript.
+- **Minimal data collection** — only name, email, role, availability, and shift assignments are stored; no home address, date of birth, or unnecessary contact details.
 
 ---
 
-## Running the tests
+## Testing
 
-The project ships with a full end-to-end test suite (50 tests, 1 skipped until a viewer account is created) built with [Playwright](https://playwright.dev/).
+The project includes tests for authentication, role-based permissions, shift CRUD actions, and form validation.
 
-**Coverage:**
-- **Authentication** — valid login, invalid login, logout, protected route redirects
-- **Permissions** — admin/volunteer/viewer access boundaries, role-gated nav links
-- **Shift CRUD** — create, edit, delete, form validation
-- **Availability** — submit dates, duplicate detection, date required, admin view
-- **Swap requests** — volunteer requests swap, admin approves, admin rejects (full end-to-end flows)
+Key tested areas:
+- Login and logout flow
+- Protected routes
+- Admin-only permissions
+- Shift creation, editing and deletion
+- Availability form validation
 
 ### Prerequisites
 
