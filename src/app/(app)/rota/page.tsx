@@ -28,10 +28,12 @@ export default async function RotaPage({
     ? getWeekStart(rawWeek)
     : getWeekStart(new Date())
 
-  const weekEnd   = addDays(weekStart, 6)
-  const prevWeek  = addDays(weekStart, -7)
-  const nextWeek  = addDays(weekStart, 7)
-  const weekLabel = `${fmtDateLong(weekStart)} – ${fmtDateLong(weekEnd)}`
+  const weekEnd     = addDays(weekStart, 6)
+  const prevWeek    = addDays(weekStart, -7)
+  const nextWeek    = addDays(weekStart, 7)
+  const weekLabel   = `${fmtDateLong(weekStart)} – ${fmtDateLong(weekEnd)}`
+  const today       = new Date().toISOString().slice(0, 10)
+  const isThisWeek  = weekStart === getWeekStart(new Date())
 
   const [{ data: slots }, { data: signups }, { data: mySwaps }] = await Promise.all([
     supabase.from('slots').select('*').gte('date', weekStart).lte('date', weekEnd).order('start_time'),
@@ -87,7 +89,7 @@ export default async function RotaPage({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              Export .ics
+              <span className="hidden sm:inline">Export .ics</span>
             </Link>
             {isManager && (
               <Link
@@ -110,7 +112,14 @@ export default async function RotaPage({
           >
             ← Prev
           </Link>
-          <span className="font-serif text-base text-stone-700">{weekLabel}</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="font-serif text-base text-stone-700">{weekLabel}</span>
+            {!isThisWeek && (
+              <Link href="/rota" className="text-xs text-sage-600 hover:text-sage-800 font-medium">
+                Today
+              </Link>
+            )}
+          </div>
           <Link
             href={`/rota?week=${nextWeek}`}
             className="text-sm font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1"
@@ -126,6 +135,7 @@ export default async function RotaPage({
           isManager={isManager}
           canSignUp={canSignUp}
           userId={user.id}
+          today={today}
         />
 
         {/* Legend */}

@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { signUpForSlot, cancelSignup, requestSwap } from '@/lib/actions'
 import { fmtTime } from '@/lib/utils'
+import { dutyBorder } from '@/lib/duty-colors'
 import type { ActionResult } from '@/lib/types'
 
 interface SlotData {
@@ -29,36 +30,49 @@ interface DayData {
 }
 
 interface Props {
-  days:       DayData[]
-  weekStart:  string
-  isManager:  boolean
-  canSignUp:  boolean
-  userId:     string
+  days:      DayData[]
+  weekStart: string
+  isManager: boolean
+  canSignUp: boolean
+  userId:    string
+  today:     string
 }
 
-export default function RotaGrid({ days, weekStart, isManager, canSignUp }: Props) {
+export default function RotaGrid({ days, weekStart, isManager, canSignUp, today }: Props) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-      {days.map(day => (
-        <div key={day.date} className="flex flex-col">
-          <div className="text-center text-[11px] font-semibold uppercase tracking-wider text-stone-500 bg-stone-100 border border-stone-200 rounded-t-lg px-2 py-1.5">
-            {day.label.split(' ').slice(0, 1)} <span className="text-stone-400 font-normal">{day.label.split(' ').slice(1).join(' ')}</span>
+      {days.map(day => {
+        const isToday = day.date === today
+        return (
+          <div key={day.date} className="flex flex-col">
+            <div className={`text-center text-[11px] font-semibold uppercase tracking-wider border rounded-t-lg px-2 py-1.5 ${
+              isToday
+                ? 'bg-sage-600 text-white border-sage-500'
+                : 'text-stone-500 bg-stone-100 border-stone-200'
+            }`}>
+              {day.label.split(' ').slice(0, 1)}{' '}
+              <span className={isToday ? 'text-sage-100 font-normal' : 'text-stone-400 font-normal'}>
+                {day.label.split(' ').slice(1).join(' ')}
+              </span>
+            </div>
+            <div className={`flex-1 border border-t-0 rounded-b-lg p-1.5 space-y-1.5 min-h-[80px] ${
+              isToday ? 'border-sage-300 bg-sage-50/30' : 'border-stone-200 bg-white'
+            }`}>
+              {day.slots.length === 0 ? (
+                <p className="text-[11px] text-stone-300 text-center py-3">—</p>
+              ) : day.slots.map(slot => (
+                <SlotCard
+                  key={slot.id}
+                  slot={slot}
+                  weekStart={weekStart}
+                  isManager={isManager}
+                  canSignUp={canSignUp}
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex-1 border border-t-0 border-stone-200 rounded-b-lg bg-white p-1.5 space-y-1.5 min-h-[80px]">
-            {day.slots.length === 0 ? (
-              <p className="text-[11px] text-stone-300 text-center py-3">—</p>
-            ) : day.slots.map(slot => (
-              <SlotCard
-                key={slot.id}
-                slot={slot}
-                weekStart={weekStart}
-                isManager={isManager}
-                canSignUp={canSignUp}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -81,7 +95,8 @@ function SlotCard({
   const [swapState,   swapAction,   swapPending]   = useActionState<ActionResult | null, FormData>(requestSwap,   null)
 
   const isCancelled = slot.status === 'cancelled'
-  const borderClass = isCancelled
+
+  const statusBg = isCancelled
     ? 'border-stone-200 bg-stone-100 opacity-60'
     : slot.mySignup
     ? 'border-sage-400 bg-sage-50'
@@ -91,10 +106,11 @@ function SlotCard({
     ? 'border-amber-200 bg-amber-50/50'
     : 'border-stone-200 bg-stone-50'
 
+  const leftAccent = isCancelled ? 'border-l-stone-300' : dutyBorder(slot.duty)
   const swapSubmitted = swapState && 'success' in swapState
 
   return (
-    <div className={`border rounded-md p-1.5 text-[11px] transition-colors ${borderClass}`}>
+    <div className={`border-l-[3px] ${leftAccent} border rounded-md p-1.5 text-[11px] transition-colors ${statusBg}`}>
       <div className="flex items-center justify-between mb-0.5">
         <span className="text-stone-400 font-medium">{fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}</span>
         <span className={`font-semibold px-1 py-0.5 rounded text-[10px] ${
@@ -151,7 +167,6 @@ function SlotCard({
                 </button>
               </form>
 
-              {/* Swap request */}
               {!slot.swapPending && !swapSubmitted && !showSwapForm && (
                 <button
                   onClick={() => setShowSwapForm(true)}
@@ -228,7 +243,6 @@ function SlotCard({
         </form>
       )}
 
-      {/* Inline errors */}
       {signupState && 'error' in signupState && (
         <p className="text-red-600 text-[10px] mt-1">{signupState.error}</p>
       )}
