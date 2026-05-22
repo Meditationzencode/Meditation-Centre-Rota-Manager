@@ -217,7 +217,14 @@ supabase/
 
 ## Running the tests
 
-The project ships with a full end-to-end test suite (39 tests) built with [Playwright](https://playwright.dev/).
+The project ships with a full end-to-end test suite (50 tests, 1 skipped until a viewer account is created) built with [Playwright](https://playwright.dev/).
+
+**Coverage:**
+- **Authentication** — valid login, invalid login, logout, protected route redirects
+- **Permissions** — admin/volunteer/viewer access boundaries, role-gated nav links
+- **Shift CRUD** — create, edit, delete, form validation
+- **Availability** — submit dates, duplicate detection, date required, admin view
+- **Swap requests** — volunteer requests swap, admin approves, admin rejects (full end-to-end flows)
 
 ### Prerequisites
 
@@ -239,12 +246,14 @@ npm run test:report   # view the last HTML report
 
 ### Test accounts
 
-| Env var | Default value |
-|---------|---------------|
-| `TEST_ADMIN_EMAIL` | `admin@bodhigrove.demo` |
-| `TEST_ADMIN_PASSWORD` | `Demo1234!` |
-| `TEST_VOL_EMAIL` | `vol1@bodhigrove.demo` |
-| `TEST_VOL_PASSWORD` | `Demo1234!` |
+| Env var | Default value | Notes |
+|---------|---------------|-------|
+| `TEST_ADMIN_EMAIL` | `admin@bodhigrove.demo` | |
+| `TEST_ADMIN_PASSWORD` | `Demo1234!` | |
+| `TEST_VOL_EMAIL` | `vol1@bodhigrove.demo` | |
+| `TEST_VOL_PASSWORD` | `Demo1234!` | |
+| `TEST_VIEWER_EMAIL` | *(unset)* | Create a member with role Viewer, then set this to enable the viewer permission test |
+| `TEST_VIEWER_PASSWORD` | `Demo1234!` | |
 
 Override any of these as environment variables before running tests. The base URL can be changed with `PLAYWRIGHT_BASE_URL`.
 
