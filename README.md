@@ -10,17 +10,25 @@ All data is entirely fictional — no real organisation information is included.
 
 ## Screenshots
 
-| Dashboard | Weekly rota |
-|-----------|-------------|
-| ![Dashboard](public/screenshots/dashboard.png) | ![Weekly rota](public/screenshots/rota-weekly.png) |
+| Login | Dashboard |
+|-------|-----------|
+| ![Login](public/screenshots/login.png) | ![Dashboard](public/screenshots/dashboard.png) |
 
-| Monthly rota | Shift detail |
+| Weekly rota | Monthly rota |
+|-------------|--------------|
+| ![Weekly rota](public/screenshots/rota-weekly.png) | ![Monthly rota](public/screenshots/rota-monthly.png) |
+
+| Create shift | Shift detail |
 |--------------|--------------|
-| ![Monthly rota](public/screenshots/rota-monthly.png) | ![Shift detail](public/screenshots/slot-detail.png) |
+| ![Create shift](public/screenshots/create-slot.png) | ![Shift detail](public/screenshots/slot-detail.png) |
 
 | Manage schedule | Member management |
 |-----------------|-------------------|
 | ![Schedule](public/screenshots/admin-schedule.png) | ![Members](public/screenshots/admin-members.png) |
+
+| Mobile view | |
+|-------------|--|
+| ![Mobile rota](public/screenshots/mobile-rota.png) | |
 
 ---
 
