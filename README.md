@@ -63,6 +63,12 @@ All data is entirely fictional — no real organisation information is included.
 
 ---
 
+## Why I Built This
+
+Many small community organisations rely on spreadsheets or manual messages to manage volunteer rotas. This project was built to solve that problem with a centralised web application that handles scheduling, availability, and swap requests in one place.
+
+---
+
 ## Getting started
 
 ### 1. Clone & install
@@ -159,6 +165,10 @@ Set the **Site URL** in Supabase Dashboard → Authentication → URL Configurat
 | View all member accounts             | ✓     | –           | –         | –      |
 | Create / edit / delete accounts      | ✓     | –           | –         | –      |
 | View audit log                       | ✓     | –           | –         | –      |
+
+## Database Design
+
+Users, shifts, shift assignments, availability, swap requests, recurring shift rules, audit logs.
 
 ---
 
@@ -259,6 +269,10 @@ npm run test:report   # view the last HTML report
 Override any of these as environment variables before running tests. The base URL can be changed with `PLAYWRIGHT_BASE_URL`.
 
 ---
+
+## What I Learned
+
+Full-stack structure, authentication, role-based access control, database relationships, CRUD operations, scheduling logic, form validation, testing, deployment, and designing for real users.
 
 ## Future improvements
 
