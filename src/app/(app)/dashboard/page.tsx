@@ -11,18 +11,22 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profile, { data: allSlots }, { data: allSignups }, { data: allProfiles }, { count: pendingSwapCount }] =
+  const today = new Date().toISOString().slice(0, 10)
+
+  const [profile, { data: futureSlots }, { data: allProfiles }, { count: pendingSwapCount }] =
     await Promise.all([
       getProfileForUser(user.id),
-      supabase.from('slots').select('*').order('date').order('start_time'),
-      supabase.from('signups').select('*'),
+      supabase.from('slots').select('*').gte('date', today).order('date').order('start_time'),
       supabase.from('profiles').select('id, role, active'),
       supabase.from('shift_swaps').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     ])
 
   if (!profile) redirect('/auth-error?reason=missing_profile')
 
-  const today = new Date().toISOString().slice(0, 10)
+  const slotIds = (futureSlots ?? []).map(s => s.id)
+  const { data: allSignups } = slotIds.length > 0
+    ? await supabase.from('signups').select('*').in('slot_id', slotIds)
+    : { data: [] }
 
   const isViewer  = profile.role === 'viewer'
   const isManager = profile.role === 'admin' || profile.role === 'coordinator'
@@ -31,16 +35,16 @@ export default async function DashboardPage() {
   const mySignupSlotIds = new Set(
     (allSignups ?? []).filter(s => s.user_id === user.id).map(s => s.slot_id),
   )
-  const myUpcoming = (allSlots ?? [])
-    .filter(s => mySignupSlotIds.has(s.id) && s.date >= today)
-    .slice(0, 5)
+  const myUpcomingAll = (futureSlots ?? []).filter(s => mySignupSlotIds.has(s.id))
+  const myUpcoming    = myUpcomingAll.slice(0, 5)
+  const myUpcomingMore = myUpcomingAll.length - myUpcoming.length
 
   // Open slots in next 7 days
   const sevenDays = new Date()
   sevenDays.setDate(sevenDays.getDate() + 7)
   const sevenDaysStr = sevenDays.toISOString().slice(0, 10)
 
-  const openSlots = (allSlots ?? [])
+  const openSlots = (futureSlots ?? [])
     .filter(s => s.date >= today && s.date <= sevenDaysStr)
     .map(s => {
       const count = (allSignups ?? []).filter(sig => sig.slot_id === s.id).length
@@ -53,7 +57,7 @@ export default async function DashboardPage() {
     members:         (allProfiles ?? []).length,
     volunteers:      (allProfiles ?? []).filter(p => p.role === 'volunteer' && p.active).length,
     pendingSwaps:    pendingSwapCount ?? 0,
-    unassignedSlots: (allSlots ?? []).filter(s =>
+    unassignedSlots: (futureSlots ?? []).filter(s =>
       s.date >= today &&
       (allSignups ?? []).filter(sig => sig.slot_id === s.id).length === 0,
     ).length,
@@ -139,26 +143,35 @@ export default async function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <ul className="divide-y divide-stone-100">
-                  {myUpcoming.map(s => (
-                    <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                      <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
-                        {fmtDate(s.date)}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{s.duty}</p>
-                        <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="divide-y divide-stone-100">
+                    {myUpcoming.map(s => (
+                      <li key={s.id} className="flex items-center gap-3 px-5 py-3">
+                        <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
+                          {fmtDate(s.date)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{s.duty}</p>
+                          <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {myUpcomingMore > 0 && (
+                    <div className="px-5 py-3 border-t border-stone-100">
+                      <Link href="/rota" className="text-xs text-teal-700 hover:underline">
+                        and {myUpcomingMore} more → View rota
+                      </Link>
+                    </div>
+                  )}
+                </>
               )}
             </section>
 
             {/* Open slots */}
             <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
               <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-                <h2 className="font-serif text-lg">Open Slots This Week</h2>
+                <h2 className="font-serif text-lg">Open Slots — Next 7 Days</h2>
                 <Link href="/rota" className="text-xs text-teal-700 hover:underline">Sign up →</Link>
               </div>
               {openSlots.length === 0 ? (

@@ -67,6 +67,7 @@ export default function RotaGrid({ days, weekStart, isManager, canSignUp, today 
                   weekStart={weekStart}
                   isManager={isManager}
                   canSignUp={canSignUp}
+                  hasOtherSignupOnDay={day.slots.some(s => s.id !== slot.id && s.mySignup)}
                 />
               ))}
             </div>
@@ -82,11 +83,13 @@ function SlotCard({
   weekStart,
   isManager,
   canSignUp,
+  hasOtherSignupOnDay,
 }: {
   slot: SlotData
   weekStart: string
   isManager: boolean
   canSignUp: boolean
+  hasOtherSignupOnDay: boolean
 }) {
   const [showSwapForm, setShowSwapForm] = useState(false)
 
@@ -180,17 +183,22 @@ function SlotCard({
               )}
             </>
           ) : slot.spotsLeft > 0 ? (
-            <form action={signupAction}>
-              <input type="hidden" name="slotId" value={slot.id} />
-              <input type="hidden" name="weekStart" value={weekStart} />
-              <button
-                type="submit"
-                disabled={signupPending}
-                className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50 transition-colors"
-              >
-                {signupPending ? '…' : 'Sign up'}
-              </button>
-            </form>
+            <>
+              <form action={signupAction}>
+                <input type="hidden" name="slotId" value={slot.id} />
+                <input type="hidden" name="weekStart" value={weekStart} />
+                <button
+                  type="submit"
+                  disabled={signupPending}
+                  className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                >
+                  {signupPending ? '…' : 'Sign up'}
+                </button>
+              </form>
+              {hasOtherSignupOnDay && (
+                <p className="text-[10px] text-amber-600 mt-0.5">You have a shift on this day</p>
+              )}
+            </>
           ) : (
             <span className="text-[10px] text-stone-400 italic">Full</span>
           )

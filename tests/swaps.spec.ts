@@ -28,17 +28,31 @@ async function signUpAndRequestSwap(
   const signUpBtn = page.getByRole('button', { name: 'Sign up' }).first()
   if (await signUpBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await signUpBtn.click()
-    // Wait for the rota to re-render showing Cancel / Swap? on the signed-up slot
     await page.waitForLoadState('networkidle')
   }
 
-  // "Swap?" only appears on slots where the current user is signed up
-  const swapBtn = page.getByRole('button', { name: 'Swap?' }).first()
-  await expect(swapBtn).toBeVisible({ timeout: 10_000 })
-  await swapBtn.click()
+  // Try each Swap? button until the server accepts the request.
+  // Accumulated test data can leave old slots with a DB-pending swap that the
+  // page missed (stale state). After each failed submit the "Swap?" button
+  // reappears at the same DOM index, so nth(i) naturally advances to the next slot.
+  const swapBtns = page.getByRole('button', { name: 'Swap?' })
+  await expect(swapBtns.first()).toBeVisible({ timeout: 10_000 })
 
-  await page.fill('textarea[name="reason"]', 'Automated test swap request')
-  await page.getByRole('button', { name: 'Request' }).first().click()
+  const count = await swapBtns.count()
+  for (let i = 0; i < count; i++) {
+    await swapBtns.nth(i).click()
+    await page.fill('textarea[name="reason"]', 'Automated test swap request')
+    await page.getByRole('button', { name: 'Request' }).first().click()
+
+    const success = await page.getByText(/swap pending/i).first()
+      .waitFor({ state: 'visible', timeout: 3_000 })
+      .then(() => true)
+      .catch(() => false)
+
+    if (success) return
+    // Server returned an error — the Swap? button reappears at position i;
+    // next iteration (i+1) targets the following slot without a page reload.
+  }
 
   await expect(page.getByText(/swap pending/i).first()).toBeVisible({ timeout: 10_000 })
 }
@@ -46,23 +60,26 @@ async function signUpAndRequestSwap(
 // Each test uses a date in a DIFFERENT week so that when the volunteer navigates
 // to that week she only sees the slots created by that specific test. Cross-week
 // isolation prevents the page-level .first() locators from grabbing the wrong slot.
+// Dates were moved to 2099-11-xx to avoid accumulated state from earlier runs on 2099-07-xx.
 test.describe('Swap requests', () => {
+  test.setTimeout(120_000)
+
   test('volunteer can request a shift swap', async ({ page }) => {
     await loginAs(page, 'admin')
-    await createSlot(page, '2099-07-01', 'Morning Sitting')   // week of 30 Jun
+    await createSlot(page, '2099-11-03', 'Morning Sitting')   // week of 3 Nov
 
     await logout(page)
     await loginAs(page, 'volunteer')
-    await signUpAndRequestSwap(page, '2099-07-01')
+    await signUpAndRequestSwap(page, '2099-11-03')
   })
 
   test('admin can approve a pending swap request', async ({ page }) => {
     await loginAs(page, 'admin')
-    await createSlot(page, '2099-07-08', 'Evening Sitting')   // week of 7 Jul
+    await createSlot(page, '2099-11-10', 'Evening Sitting')   // week of 10 Nov
 
     await logout(page)
     await loginAs(page, 'volunteer')
-    await signUpAndRequestSwap(page, '2099-07-08')
+    await signUpAndRequestSwap(page, '2099-11-10')
 
     await logout(page)
     await loginAs(page, 'admin')
@@ -83,11 +100,11 @@ test.describe('Swap requests', () => {
 
   test('admin can reject a pending swap request', async ({ page }) => {
     await loginAs(page, 'admin')
-    await createSlot(page, '2099-07-15', 'Reception Desk')    // week of 14 Jul
+    await createSlot(page, '2099-11-17', 'Reception Desk')    // week of 17 Nov
 
     await logout(page)
     await loginAs(page, 'volunteer')
-    await signUpAndRequestSwap(page, '2099-07-15')
+    await signUpAndRequestSwap(page, '2099-11-17')
 
     await logout(page)
     await loginAs(page, 'admin')

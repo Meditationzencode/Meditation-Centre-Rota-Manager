@@ -35,11 +35,15 @@ export default async function RotaPage({
   const today       = new Date().toISOString().slice(0, 10)
   const isThisWeek  = weekStart === getWeekStart(new Date())
 
-  const [{ data: slots }, { data: signups }, { data: mySwaps }] = await Promise.all([
+  const [{ data: slots }, { data: mySwaps }] = await Promise.all([
     supabase.from('slots').select('*').gte('date', weekStart).lte('date', weekEnd).order('start_time'),
-    supabase.from('signups').select('*, profile:profiles(id, name)'),
     supabase.from('shift_swaps').select('slot_id').eq('requester_id', user.id).eq('status', 'pending'),
   ])
+
+  const slotIds = (slots ?? []).map(s => s.id)
+  const { data: signups } = slotIds.length > 0
+    ? await supabase.from('signups').select('*, profile:profiles(id, name)').in('slot_id', slotIds)
+    : { data: [] }
 
   const mySwapSlotIds = new Set((mySwaps ?? []).map(s => s.slot_id as string))
   const canSignUp     = profile.role !== 'viewer'
