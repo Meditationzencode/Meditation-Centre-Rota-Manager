@@ -234,6 +234,9 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
+
   const swapId     = formData.get('swapId')     as string
   const decision   = formData.get('decision')   as 'approved' | 'rejected'
   const adminNotes = (formData.get('adminNotes') as string ?? '').trim()
@@ -422,6 +425,12 @@ export async function adminRemoveVolunteer(_prev: ActionResult | null, formData:
 // ── Members (admin only) ──────────────────────────────────────────────────────
 
 export async function createMember(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user: caller } } = await supabase.auth.getUser()
+  if (!caller) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single()
+  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
+
   const name     = (formData.get('name')     as string).trim()
   const email    = (formData.get('email')    as string).trim()
   const role     = formData.get('role')      as Role
@@ -439,11 +448,9 @@ export async function createMember(_prev: ActionResult | null, formData: FormDat
 
   if (error) return { error: error.message }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
   await supabase.from('profiles').update({ name, role }).eq('id', data.user.id)
 
-  if (user) await audit(user.id, 'member.create', 'member', data.user.id, `Created member: ${name} (${role})`)
+  await audit(caller.id, 'member.create', 'member', data.user.id, `Created member: ${name} (${role})`)
   revalidatePath('/admin/members')
   redirect('/admin/members')
 }
@@ -458,6 +465,9 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
 
   const { error } = await supabase
     .from('profiles')
@@ -473,7 +483,7 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
     if (pwErr) return { error: pwErr.message }
   }
 
-  if (user) await audit(user.id, 'member.update', 'member', id, `Updated member: ${name} → role=${role}, active=${active}`)
+  await audit(user.id, 'member.update', 'member', id, `Updated member: ${name} → role=${role}, active=${active}`)
   revalidatePath('/admin/members')
   redirect('/admin/members')
 }
@@ -481,6 +491,9 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
 export async function toggleMemberActive(memberId: string, active: boolean): Promise<ActionResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
 
   const { error } = await supabase
     .from('profiles')
@@ -489,7 +502,7 @@ export async function toggleMemberActive(memberId: string, active: boolean): Pro
 
   if (error) return { error: error.message }
 
-  if (user) await audit(user.id, active ? 'member.deactivate' : 'member.activate', 'member', memberId, `${active ? 'Deactivated' : 'Activated'} member`)
+  await audit(user.id, active ? 'member.deactivate' : 'member.activate', 'member', memberId, `${active ? 'Deactivated' : 'Activated'} member`)
   revalidatePath('/admin/members')
   return { success: true }
 }
@@ -497,13 +510,16 @@ export async function toggleMemberActive(memberId: string, active: boolean): Pro
 export async function deleteMember(memberId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
 
   const { data: profile } = await supabase.from('profiles').select('name').eq('id', memberId).single()
   const admin = createAdminClient()
   const { error } = await admin.auth.admin.deleteUser(memberId)
   if (error) return { error: error.message }
 
-  if (user) await audit(user.id, 'member.delete', 'member', memberId, `Deleted member: ${profile?.name ?? memberId}`)
+  await audit(user.id, 'member.delete', 'member', memberId, `Deleted member: ${profile?.name ?? memberId}`)
   revalidatePath('/admin/members')
   return { success: true }
 }

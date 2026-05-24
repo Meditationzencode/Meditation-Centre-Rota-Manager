@@ -225,7 +225,7 @@ supabase/
 - **Environment variables** — secret keys (`SUPABASE_SERVICE_ROLE_KEY`) are server-side only and excluded from the browser bundle. The `.env.local` file is in `.gitignore` and never committed.
 - **Row Level Security** — RLS is enabled on every table. Database access is enforced at the Postgres level regardless of application code, so a bug in server logic cannot leak another user's data.
 - **Service role key scoping** — the admin (service role) client is only instantiated in server-side code for operations that legitimately require bypassing RLS (creating users, approving swaps). It is never accessible to the browser.
-- **Protected admin routes** — middleware redirects unauthenticated requests to `/login`. Role checks in every server component and server action prevent privilege escalation; e.g. only admins can reach `/admin/members` and `/admin/swaps`.
+- **Protected admin routes** — middleware redirects unauthenticated requests to `/login`. Role checks in server components, server actions, and middleware prevent privilege escalation; e.g. only admins can reach `/admin/members` and `/admin/swaps`.
 - **Form validation** — all forms validate required fields, email format, and time ordering (start before end) on both the client and server. Server Actions re-validate every input before touching the database.
 - **Role immutability** — the `my_role()` SECURITY DEFINER function prevents volunteers from reading or modifying their own role via RLS policy bypass.
 - **No secrets in version control** — `.env.local` and any file matching `.env*.local` are gitignored. The repository contains only `.env.local.example` with placeholder values.
