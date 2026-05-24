@@ -10,25 +10,41 @@ All data is entirely fictional — no real organisation information is included.
 
 ## Screenshots
 
-| Login | Dashboard |
-|-------|-----------|
-| ![Login](public/screenshots/login.png) | ![Dashboard](public/screenshots/dashboard.png) |
+| Home | Login |
+|------|-------|
+| ![Home](public/screenshots/home.png) | ![Login](public/screenshots/login.png) |
+
+| Dashboard | Profile |
+|-----------|---------|
+| ![Dashboard](public/screenshots/dashboard.png) | ![Profile](public/screenshots/profile.png) |
 
 | Weekly rota | Monthly rota |
 |-------------|--------------|
 | ![Weekly rota](public/screenshots/rota-weekly.png) | ![Monthly rota](public/screenshots/rota-monthly.png) |
 
-| Create shift | Shift detail |
+| Shift detail | Create shift |
 |--------------|--------------|
-| ![Create shift](public/screenshots/create-slot.png) | ![Shift detail](public/screenshots/slot-detail.png) |
+| ![Shift detail](public/screenshots/slot-detail.png) | ![Create shift](public/screenshots/create-slot.png) |
 
-| Manage schedule | Member management |
-|-----------------|-------------------|
-| ![Schedule](public/screenshots/admin-schedule.png) | ![Members](public/screenshots/admin-members.png) |
+| Edit shift | Recurring schedule |
+|------------|--------------------|
+| ![Edit shift](public/screenshots/edit-slot.png) | ![Recurring schedule](public/screenshots/admin-schedule-recurring.png) |
 
-| Mobile view | |
-|-------------|--|
-| ![Mobile rota](public/screenshots/mobile-rota.png) | |
+| Member management | Edit member |
+|-------------------|-------------|
+| ![Members](public/screenshots/admin-members.png) | ![Edit member](public/screenshots/edit-member.png) |
+
+| Swap requests | Activity log |
+|---------------|--------------|
+| ![Swaps](public/screenshots/admin-swaps.png) | ![Activity](public/screenshots/admin-activity.png) |
+
+| Member availability | Add member |
+|---------------------|------------|
+| ![Availability](public/screenshots/admin-availability.png) | ![Add member](public/screenshots/admin-members-new.png) |
+
+| Mobile dashboard | Mobile rota |
+|------------------|-------------|
+| ![Mobile dashboard](public/screenshots/mobile-dashboard.png) | ![Mobile rota](public/screenshots/mobile-rota.png) |
 
 ---
 

@@ -16,88 +16,123 @@ const BASE_URL       = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000
 const ADMIN_EMAIL    = process.env.TEST_ADMIN_EMAIL    ?? 'admin@bodhigrove.demo'
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD ?? 'Demo1234!'
 
-async function main() {
-  await mkdir(OUT_DIR, { recursive: true })
-
-  const browser = await chromium.launch()
-
-  // --- Desktop context (1280×800) ---
-  const desktop  = await browser.newContext({ viewport: { width: 1280, height: 800 } })
-  const page     = await desktop.newPage()
-
-  // 1. Login page — capture BEFORE logging in, with a validation error visible
-  await page.goto(`${BASE_URL}/login`)
+async function shot(page, name) {
+  const file = join(OUT_DIR, `${name}.png`)
   await page.waitForLoadState('networkidle')
-  await page.fill('input[name="email"]',    'wrong@example.com')
-  await page.fill('input[name="password"]', 'badpassword')
-  await page.click('button[type="submit"]')
-  // Wait for an error message to appear
-  await page.waitForSelector('text=/invalid|incorrect|error/i', { timeout: 10_000 }).catch(() => {})
-  await page.screenshot({ path: join(OUT_DIR, 'login.png'), fullPage: false })
-  console.log('Saved login.png')
+  await page.screenshot({ path: file, fullPage: false })
+  console.log(`  ✓ ${name}.png`)
+}
 
-  // Log in properly
+async function loginAdmin(page) {
   await page.goto(`${BASE_URL}/login`)
   await page.fill('input[name="email"]',    ADMIN_EMAIL)
   await page.fill('input[name="password"]', ADMIN_PASSWORD)
   await page.click('button[type="submit"]')
   await page.waitForURL('**/dashboard', { timeout: 15_000 })
+}
 
-  // 2. Standard full-page screenshots
-  const shots = [
-    { name: 'dashboard',          path: '/dashboard'          },
-    { name: 'rota-weekly',        path: '/rota'               },
-    { name: 'rota-monthly',       path: '/rota/month'         },
-    { name: 'admin-schedule',     path: '/admin/schedule'     },
-    { name: 'admin-members',      path: '/admin/members'      },
-    { name: 'admin-availability', path: '/admin/availability' },
-  ]
+async function main() {
+  await mkdir(OUT_DIR, { recursive: true })
+  const browser = await chromium.launch()
 
-  for (const { name, path } of shots) {
+  // ── Desktop (1280×800) ───────────────────────────────────────────────────────
+  console.log('\nDesktop screenshots (1280×800):')
+  const desktop = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+  const page    = await desktop.newPage()
+
+  // Public pages
+  await page.goto(`${BASE_URL}/`)
+  await shot(page, 'home')
+
+  await page.goto(`${BASE_URL}/forgot-password`)
+  await shot(page, 'forgot-password')
+
+  // Login with validation error
+  await page.goto(`${BASE_URL}/login`)
+  await page.fill('input[name="email"]',    'wrong@example.com')
+  await page.fill('input[name="password"]', 'badpassword')
+  await page.click('button[type="submit"]')
+  await page.waitForSelector('text=/invalid|incorrect|error/i', { timeout: 10_000 }).catch(() => {})
+  await shot(page, 'login')
+
+  // Log in as admin
+  await loginAdmin(page)
+
+  // Core app pages
+  for (const [name, path] of [
+    ['dashboard',          '/dashboard'],
+    ['rota-weekly',        '/rota'],
+    ['rota-monthly',       '/rota/month'],
+    ['profile',            '/profile'],
+  ]) {
     await page.goto(`${BASE_URL}${path}`)
-    await page.waitForLoadState('networkidle')
-    await page.screenshot({ path: join(OUT_DIR, `${name}.png`), fullPage: false })
-    console.log(`Saved ${name}.png`)
+    await shot(page, name)
   }
 
-  // 3. Shift detail — click first slot link on the rota
+  // Slot detail — click first slot link
   await page.goto(`${BASE_URL}/rota`)
   await page.waitForLoadState('networkidle')
   const slotLink = page.locator('a[href^="/rota/"]:not([href="/rota/month"])').first()
   if (await slotLink.count()) {
     await slotLink.click()
-    await page.waitForLoadState('networkidle')
-    await page.screenshot({ path: join(OUT_DIR, 'slot-detail.png'), fullPage: false })
-    console.log('Saved slot-detail.png')
+    await shot(page, 'slot-detail')
+    await page.goBack()
   }
 
-  // 4. Create shift form
-  await page.goto(`${BASE_URL}/admin/schedule/new`)
+  // Admin pages
+  for (const [name, path] of [
+    ['admin-schedule',          '/admin/schedule'],
+    ['admin-schedule-recurring','/admin/schedule/recurring'],
+    ['create-slot',             '/admin/schedule/new'],
+    ['admin-members',           '/admin/members'],
+    ['admin-members-new',       '/admin/members/new'],
+    ['admin-swaps',             '/admin/swaps'],
+    ['admin-activity',          '/admin/activity'],
+    ['admin-availability',      '/admin/availability'],
+  ]) {
+    await page.goto(`${BASE_URL}${path}`)
+    await shot(page, name)
+  }
+
+  // Edit slot — grab the first slot ID from schedule page
+  await page.goto(`${BASE_URL}/admin/schedule`)
   await page.waitForLoadState('networkidle')
-  await page.screenshot({ path: join(OUT_DIR, 'create-slot.png'), fullPage: false })
-  console.log('Saved create-slot.png')
+  const editLink = page.locator('a[href*="/edit"]').first()
+  if (await editLink.count()) {
+    await editLink.click()
+    await shot(page, 'edit-slot')
+  }
+
+  // Edit member — grab first member edit link
+  await page.goto(`${BASE_URL}/admin/members`)
+  await page.waitForLoadState('networkidle')
+  const memberEditLink = page.locator('a[href*="/edit"]').first()
+  if (await memberEditLink.count()) {
+    await memberEditLink.click()
+    await shot(page, 'edit-member')
+  }
 
   await desktop.close()
 
-  // --- Mobile context (390×844, iPhone 14 size) ---
+  // ── Mobile (390×844) ────────────────────────────────────────────────────────
+  console.log('\nMobile screenshots (390×844):')
   const mobile     = await browser.newContext({ viewport: { width: 390, height: 844 } })
   const mobilePage = await mobile.newPage()
+  await loginAdmin(mobilePage)
 
-  await mobilePage.goto(`${BASE_URL}/login`)
-  await mobilePage.fill('input[name="email"]',    ADMIN_EMAIL)
-  await mobilePage.fill('input[name="password"]', ADMIN_PASSWORD)
-  await mobilePage.click('button[type="submit"]')
-  await mobilePage.waitForURL('**/dashboard', { timeout: 15_000 })
-
-  await mobilePage.goto(`${BASE_URL}/rota`)
-  await mobilePage.waitForLoadState('networkidle')
-  await mobilePage.screenshot({ path: join(OUT_DIR, 'mobile-rota.png'), fullPage: false })
-  console.log('Saved mobile-rota.png')
+  for (const [name, path] of [
+    ['mobile-dashboard', '/dashboard'],
+    ['mobile-rota',      '/rota'],
+    ['mobile-monthly',   '/rota/month'],
+    ['mobile-profile',   '/profile'],
+  ]) {
+    await mobilePage.goto(`${BASE_URL}${path}`)
+    await shot(mobilePage, name)
+  }
 
   await mobile.close()
-
   await browser.close()
-  console.log(`\nAll screenshots saved to public/screenshots/`)
+  console.log(`\nDone — all screenshots saved to public/screenshots/`)
 }
 
 main().catch(err => { console.error(err); process.exit(1) })
