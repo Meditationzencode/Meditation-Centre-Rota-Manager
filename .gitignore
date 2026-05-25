@@ -33,3 +33,6 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+
+# Local one-off debug scripts (not part of the project)
+scripts/test-dashboard.mjs

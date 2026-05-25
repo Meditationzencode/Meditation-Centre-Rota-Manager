@@ -1,6 +1,6 @@
 -- ============================================================
 -- Sangha Rota — Feature additions
--- Run this in the Supabase SQL editor AFTER schema.sql and rls.sql
+-- Run this in the Supabase SQL editor AFTER 03_shift_swaps.sql
 -- ============================================================
 
 -- ── Ensure helper exists (idempotent) ────────────────────────────────────────

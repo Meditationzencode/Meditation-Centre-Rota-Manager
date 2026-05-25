@@ -1,6 +1,6 @@
 -- ============================================================
 -- Sangha Rota — Row Level Security policies
--- Run this AFTER schema.sql in the Supabase SQL editor
+-- Run this AFTER 01_schema.sql in the Supabase SQL editor
 -- ============================================================
 
 -- Enable RLS on all tables

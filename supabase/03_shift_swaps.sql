@@ -1,6 +1,7 @@
 -- ============================================================
 -- Sangha Rota — Shift swaps + viewer role support
--- Run this in the Supabase SQL editor AFTER add-features.sql
+-- Run this in the Supabase SQL editor AFTER 02_rls.sql
+-- (uses my_role() defined in 02_rls.sql)
 -- ============================================================
 
 -- ── Viewer role ───────────────────────────────────────────────────────────────

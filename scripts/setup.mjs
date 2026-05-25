@@ -1,6 +1,7 @@
 /**
  * Sangha Rota — one-shot setup script
- * Run after schema.sql and rls.sql have been applied in the Supabase SQL editor.
+ * Run after the numbered SQL files (01_schema.sql through 06_schema_v2.sql)
+ * have been applied in the Supabase SQL editor.
  * Usage:  node scripts/setup.mjs
  */
 
