@@ -19,6 +19,18 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: { template: '%s — Sangha Rota', default: 'Sangha Rota' },
   description: 'Volunteer rota management for Bodhi Grove Meditation Centre',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Sangha Rota',
+  },
+}
+
+export const viewport = {
+  themeColor: '#3d6b52',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
       <body className="min-h-screen flex flex-col font-sans">
         {children}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+          }
+        `}} />
       </body>
     </html>
   )

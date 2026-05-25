@@ -1,8 +1,10 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signUpForSlot, cancelSignup, requestSwap } from '@/lib/actions'
+import { createClient } from '@/lib/supabase/client'
 import { fmtTime } from '@/lib/utils'
 import { dutyBorder } from '@/lib/duty-colors'
 import type { ActionResult } from '@/lib/types'
@@ -39,6 +41,21 @@ interface Props {
 }
 
 export default function RotaGrid({ days, weekStart, isManager, canSignUp, today }: Props) {
+  const router = useRouter()
+
+  useEffect(() => {
+    const supabase = createClient()
+    // Subscribe to any change in slots or signups — when another user signs up,
+    // cancels, or an admin edits a slot, this fires and re-fetches server data.
+    const channel = supabase
+      .channel('rota-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'slots' },   () => router.refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'signups' }, () => router.refresh())
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [router])
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
       {days.map(day => {
