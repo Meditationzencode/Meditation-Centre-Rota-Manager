@@ -15,9 +15,25 @@ export default function LoginPage() {
           <p className="uppercase tracking-[0.2em] text-sm text-stone-300 mb-1">Meditation Centre</p>
           <p className="text-stone-400 text-sm mt-4">Sangha Rota — volunteer scheduling portal</p>
         </div>
-        <blockquote className="border-l-2 border-white/30 pl-4 italic font-serif text-lg text-white/70">
-          &ldquo;Peace comes from within. Do not seek it without.&rdquo;
-        </blockquote>
+        <div className="space-y-6">
+          <blockquote className="border-l-2 border-white/30 pl-4 italic font-serif text-lg text-white/70">
+            &ldquo;Peace comes from within. Do not seek it without.&rdquo;
+          </blockquote>
+          <div className="border-t border-white/10 pt-5 text-xs text-white/40 space-y-1">
+            <p className="font-semibold text-white/60 not-italic">
+              Designed &amp; built by{' '}
+              <a
+                href="https://github.com/Meditationzencode"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-white/80 transition-colors"
+              >
+                MeditationzenCode
+              </a>
+            </p>
+            <p>Full-stack portfolio project &mdash; Next.js 15 &middot; TypeScript &middot; PostgreSQL &middot; Supabase Auth &middot; Playwright E2E</p>
+          </div>
+        </div>
       </div>
 
       {/* Form panel */}
@@ -58,6 +74,24 @@ export default function LoginPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Portfolio credit — visible to hiring managers reviewing the demo */}
+          <div className="mt-6 pt-5 border-t border-stone-200 text-center">
+            <p className="text-xs text-stone-500">
+              Designed &amp; built by{' '}
+              <a
+                href="https://github.com/Meditationzencode"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-stone-700 underline hover:text-sage-700 transition-colors"
+              >
+                MeditationzenCode
+              </a>
+            </p>
+            <p className="text-[10px] text-stone-400 mt-1">
+              Next.js 15 &middot; TypeScript &middot; Supabase &middot; PostgreSQL &middot; Playwright E2E tests
+            </p>
           </div>
         </div>
       </div>

@@ -146,9 +146,20 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-stone-200 bg-stone-100 py-4 text-center text-xs text-stone-400">
-        Bodhi Grove Meditation Centre &mdash; Sangha Rota &mdash;{' '}
-        <em>Demo version. No real data.</em>
+      <footer className="mt-auto border-t border-stone-200 bg-stone-100 py-5 text-center text-xs text-stone-400 space-y-1">
+        <p>Bodhi Grove Meditation Centre &mdash; Sangha Rota &mdash; <em>Demo version. No real data.</em></p>
+        <p>
+          Designed &amp; built by{' '}
+          <a
+            href="https://github.com/Meditationzencode"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-stone-600 transition-colors"
+          >
+            MeditationzenCode
+          </a>
+          {' '}&mdash; full-stack portfolio project &middot; Next.js 15 &middot; TypeScript &middot; Supabase &middot; Playwright E2E tests
+        </p>
       </footer>
     </div>
   )
