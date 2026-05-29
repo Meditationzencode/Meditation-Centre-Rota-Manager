@@ -42,32 +42,32 @@ export default function LoginForm() {
       )}
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium text-stone-700">Email address</label>
+        <label htmlFor="email" className="text-sm font-medium text-ink/80">Email address</label>
         <input
           ref={emailRef}
           id="email" name="email" type="email" required autoComplete="email"
           placeholder="you@bodhigrove.demo"
-          className="w-full border border-stone-300 rounded-md px-3 py-2 text-sm bg-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent"
+          className="w-full border border-sand rounded-md px-3 py-2 text-sm bg-white text-ink placeholder:text-ink/35 focus:outline-none focus:ring-2 focus:ring-mist focus:border-transparent"
         />
       </div>
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between mb-1">
-          <label htmlFor="password" className="text-sm font-medium text-stone-700">Password</label>
-          <Link href="/forgot-password" className="text-xs text-sage-700 hover:underline">Forgot password?</Link>
+          <label htmlFor="password" className="text-sm font-medium text-ink/80">Password</label>
+          <Link href="/forgot-password" className="text-xs text-gold-600 hover:text-gold-700 font-medium">Forgot password?</Link>
         </div>
         <input
           ref={passwordRef}
           id="password" name="password" type="password" required autoComplete="current-password"
           placeholder="••••••••"
-          className="w-full border border-stone-300 rounded-md px-3 py-2 text-sm bg-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent"
+          className="w-full border border-sand rounded-md px-3 py-2 text-sm bg-white text-ink placeholder:text-ink/35 focus:outline-none focus:ring-2 focus:ring-mist focus:border-transparent"
         />
       </div>
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-sage-600 hover:bg-sage-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-md text-sm transition-colors"
+        className="w-full bg-sage-600 hover:bg-sage-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-md text-sm transition-colors shadow-sm"
       >
         {pending ? 'Signing in…' : 'Sign In'}
       </button>

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
+import PageHeader from '@/components/ui/page-header'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -65,24 +66,17 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      {/* Page header */}
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-6xl mx-auto px-5">
-          <h1 className="font-serif text-3xl font-medium">
-            Good day, {profile.name.split(' ')[0]}
-          </h1>
-          <p className="text-stone-500 text-sm mt-1">
-            Your overview for Bodhi Grove Meditation Centre
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={`Good day, ${profile.name.split(' ')[0]}`}
+        subtitle="Your overview for Bodhi Grove Meditation Centre"
+      />
 
-      <div className="max-w-6xl mx-auto px-5 mt-7 space-y-8">
+      <div className="max-w-6xl mx-auto px-5 space-y-8">
 
         {/* Viewer: read-only rota summary */}
         {isViewer && (
-          <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-6 text-center space-y-3">
-            <p className="text-stone-500 text-sm">
+          <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-6 text-center space-y-3">
+            <p className="text-ink/60 text-sm">
               You have viewer access. You can browse the rota but cannot sign up for slots.
             </p>
             <Link
@@ -107,19 +101,19 @@ export default async function DashboardPage() {
                 key={s.label}
                 href={s.href}
                 className={`bg-white border rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow transition-shadow ${
-                  s.alert ? 'border-amber-300' : 'border-stone-200'
+                  s.alert ? 'border-gold-200 ring-1 ring-gold-100' : 'border-sand/70'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${
-                  s.alert ? 'bg-amber-50' : 'bg-stone-100'
+                  s.alert ? 'bg-gold-50' : 'bg-paper-100'
                 }`}>
                   {s.icon}
                 </div>
                 <div>
-                  <div className={`text-2xl font-serif font-semibold leading-none ${s.alert ? 'text-amber-700' : ''}`}>
+                  <div className={`text-2xl font-serif font-semibold leading-none ${s.alert ? 'text-gold-700' : 'text-ink'}`}>
                     {s.value}
                   </div>
-                  <div className="text-xs text-stone-500 mt-0.5">{s.label}</div>
+                  <div className="text-xs text-ink/55 mt-0.5">{s.label}</div>
                 </div>
               </Link>
             ))}
@@ -130,36 +124,36 @@ export default async function DashboardPage() {
         {!isViewer && (
           <div className="grid lg:grid-cols-2 gap-6">
             {/* My upcoming duties */}
-            <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-                <h2 className="font-serif text-lg">My Upcoming Duties</h2>
-                <Link href="/rota" className="text-xs text-teal-700 hover:underline">View rota →</Link>
+            <section className="bg-white border border-sand/70 rounded-xl shadow-sm">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
+                <h2 className="font-serif text-lg text-ink">My Upcoming Duties</h2>
+                <Link href="/rota" className="text-xs text-sage-700 hover:underline">View rota →</Link>
               </div>
               {myUpcoming.length === 0 ? (
-                <div className="px-5 py-8 text-center text-stone-400 text-sm space-y-3">
+                <div className="px-5 py-8 text-center text-ink/45 text-sm space-y-3">
                   <p>No upcoming duties.</p>
-                  <Link href="/rota" className="inline-block text-xs border border-stone-300 rounded-md px-3 py-1.5 hover:bg-stone-50">
+                  <Link href="/rota" className="inline-block text-xs border border-sand rounded-md px-3 py-1.5 hover:bg-paper-100">
                     Browse open slots
                   </Link>
                 </div>
               ) : (
                 <>
-                  <ul className="divide-y divide-stone-100">
+                  <ul className="divide-y divide-sand/40">
                     {myUpcoming.map(s => (
                       <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                        <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
+                        <span className="text-xs font-semibold text-sage-700 uppercase tracking-wide w-16 flex-shrink-0">
                           {fmtDate(s.date)}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{s.duty}</p>
-                          <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
+                          <p className="text-sm font-medium truncate text-ink">{s.duty}</p>
+                          <p className="text-xs text-ink/45">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
                         </div>
                       </li>
                     ))}
                   </ul>
                   {myUpcomingMore > 0 && (
-                    <div className="px-5 py-3 border-t border-stone-100">
-                      <Link href="/rota" className="text-xs text-teal-700 hover:underline">
+                    <div className="px-5 py-3 border-t border-sand/40">
+                      <Link href="/rota" className="text-xs text-sage-700 hover:underline">
                         and {myUpcomingMore} more → View rota
                       </Link>
                     </div>
@@ -169,28 +163,28 @@ export default async function DashboardPage() {
             </section>
 
             {/* Open slots */}
-            <section className="bg-white border border-stone-200 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-                <h2 className="font-serif text-lg">Open Slots — Next 7 Days</h2>
-                <Link href="/rota" className="text-xs text-teal-700 hover:underline">Sign up →</Link>
+            <section className="bg-white border border-sand/70 rounded-xl shadow-sm">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
+                <h2 className="font-serif text-lg text-ink">Open Slots — Next 7 Days</h2>
+                <Link href="/rota" className="text-xs text-sage-700 hover:underline">Sign up →</Link>
               </div>
               {openSlots.length === 0 ? (
-                <div className="px-5 py-8 text-center text-stone-400 text-sm">
+                <div className="px-5 py-8 text-center text-ink/45 text-sm">
                   All upcoming slots are filled.
                 </div>
               ) : (
-                <ul className="divide-y divide-stone-100">
+                <ul className="divide-y divide-sand/40">
                   {openSlots.map(s => (
                     <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                      <span className="text-xs font-semibold text-teal-700 uppercase tracking-wide w-16 flex-shrink-0">
+                      <span className="text-xs font-semibold text-sage-700 uppercase tracking-wide w-16 flex-shrink-0">
                         {fmtDate(s.date)}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{s.duty}</p>
-                        <p className="text-xs text-stone-400">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
+                        <p className="text-sm font-medium truncate text-ink">{s.duty}</p>
+                        <p className="text-xs text-ink/45">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
                       </div>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        s.spotsLeft === 1 ? 'bg-amber-100 text-amber-700' : 'bg-sage-100 text-sage-700'
+                        s.spotsLeft === 1 ? 'bg-gold-100 text-gold-700' : 'bg-sage-100 text-sage-700'
                       }`}>
                         {s.spotsLeft} left
                       </span>
@@ -205,7 +199,7 @@ export default async function DashboardPage() {
         {/* Quick actions — managers only */}
         {isManager && (
           <section>
-            <h2 className="font-serif text-xl mb-4">Quick Actions</h2>
+            <h2 className="font-serif text-xl mb-4 text-ink">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { href: '/admin/schedule/new', icon: '＋', label: 'Add Rota Slot'     },
@@ -217,10 +211,10 @@ export default async function DashboardPage() {
               ].map(a => (
                 <Link
                   key={a.href} href={a.href}
-                  className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col items-center gap-2 text-center shadow-sm hover:shadow hover:border-stone-400 transition-all group"
+                  className="bg-white border border-sand/70 rounded-xl p-4 flex flex-col items-center gap-2 text-center shadow-sm hover:shadow hover:border-mist/70 transition-all group"
                 >
                   <span className="text-2xl">{a.icon}</span>
-                  <span className="text-xs font-medium text-stone-600 group-hover:text-stone-900">{a.label}</span>
+                  <span className="text-xs font-medium text-ink/65 group-hover:text-ink">{a.label}</span>
                 </Link>
               ))}
             </div>

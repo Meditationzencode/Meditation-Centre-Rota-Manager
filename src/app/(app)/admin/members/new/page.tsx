@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import MemberForm from '../../member-form'
+import PageHeader from '@/components/ui/page-header'
 
 export const metadata: Metadata = { title: 'Add Member' }
 
@@ -18,13 +19,14 @@ export default async function NewMemberPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-2xl mx-auto px-5 flex items-center justify-between gap-3">
-          <h1 className="font-serif text-3xl font-medium">Add Member</h1>
-          <Link href="/admin/members" className="text-sm text-stone-600 hover:text-stone-900">← Back</Link>
-        </div>
-      </div>
-      <div className="max-w-2xl mx-auto px-5 mt-6">
+      <PageHeader
+        title="Add Member"
+        maxWidth="max-w-5xl"
+        actions={
+          <Link href="/admin/members" className="text-sm text-ink/65 hover:text-ink">← Back</Link>
+        }
+      />
+      <div className="max-w-2xl mx-auto px-5">
         <MemberForm member={null} />
       </div>
     </div>

@@ -9,7 +9,7 @@
   }
 
   body {
-    @apply bg-stone-50 text-stone-900 antialiased;
+    @apply bg-paper-100 text-ink antialiased;
   }
 
   h1, h2, h3, h4 {

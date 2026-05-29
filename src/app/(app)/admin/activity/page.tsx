@@ -2,24 +2,25 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { AuditEntry } from '@/lib/types'
+import PageHeader from '@/components/ui/page-header'
 
 export const metadata: Metadata = { title: 'Activity Log' }
 
 const ACTION_COLOURS: Record<string, string> = {
-  'signup.add':       'bg-green-100 text-green-800',
-  'signup.cancel':    'bg-yellow-100 text-yellow-800',
-  'slot.create':      'bg-teal-100 text-teal-800',
-  'slot.update':      'bg-blue-100 text-blue-800',
-  'slot.delete':      'bg-red-100 text-red-800',
-  'member.create':    'bg-teal-100 text-teal-800',
-  'member.update':    'bg-blue-100 text-blue-800',
-  'member.delete':    'bg-red-100 text-red-800',
-  'member.activate':  'bg-green-100 text-green-800',
-  'member.deactivate':'bg-orange-100 text-orange-800',
+  'signup.add':       'bg-sage-100 text-sage-800',
+  'signup.cancel':    'bg-gold-100 text-gold-700',
+  'slot.create':      'bg-mist/30 text-sage-800',
+  'slot.update':      'bg-paper-200 text-ink/70',
+  'slot.delete':      'bg-red-100 text-red-700',
+  'member.create':    'bg-mist/30 text-sage-800',
+  'member.update':    'bg-paper-200 text-ink/70',
+  'member.delete':    'bg-red-100 text-red-700',
+  'member.activate':  'bg-sage-100 text-sage-800',
+  'member.deactivate':'bg-gold-100 text-gold-700',
 }
 
 function actionColour(action: string) {
-  return ACTION_COLOURS[action] ?? 'bg-stone-100 text-stone-700'
+  return ACTION_COLOURS[action] ?? 'bg-paper-200 text-ink/70'
 }
 
 export default async function ActivityPage() {
@@ -40,46 +41,45 @@ export default async function ActivityPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-5xl mx-auto px-5">
-          <h1 className="font-serif text-3xl font-medium">Activity Log</h1>
-          <p className="text-stone-500 text-sm mt-1">Last 200 actions across the system.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Activity Log"
+        subtitle="Last 200 actions across the system."
+        maxWidth="max-w-5xl"
+      />
 
-      <div className="max-w-5xl mx-auto px-5 mt-6">
-        <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="max-w-5xl mx-auto px-5">
+        <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
           {log.length === 0 ? (
-            <div className="px-5 py-12 text-center text-stone-400 text-sm">No activity recorded yet.</div>
+            <div className="px-5 py-12 text-center text-ink/40 text-sm">No activity recorded yet.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
-                <thead className="bg-stone-50 border-b border-stone-200 text-xs text-stone-500 uppercase tracking-wide">
+                <thead className="bg-paper-100 border-b border-sand/60 text-[11px] text-ink/50 uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Time</th>
-                    <th className="px-4 py-3 text-left font-medium">User</th>
-                    <th className="px-4 py-3 text-left font-medium">Action</th>
-                    <th className="px-4 py-3 text-left font-medium">Detail</th>
+                    <th className="px-4 py-3 text-left font-semibold">Time</th>
+                    <th className="px-4 py-3 text-left font-semibold">User</th>
+                    <th className="px-4 py-3 text-left font-semibold">Action</th>
+                    <th className="px-4 py-3 text-left font-semibold">Detail</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-sand/40">
                   {log.map(entry => (
-                    <tr key={entry.id} className="hover:bg-stone-50 transition-colors">
-                      <td className="px-4 py-3 text-stone-400 whitespace-nowrap text-xs">
+                    <tr key={entry.id} className="hover:bg-paper-100/60 transition-colors">
+                      <td className="px-4 py-3 text-ink/45 whitespace-nowrap text-xs">
                         {new Date(entry.created_at).toLocaleString('en-GB', {
                           day: '2-digit', month: 'short', year: 'numeric',
                           hour: '2-digit', minute: '2-digit',
                         })}
                       </td>
-                      <td className="px-4 py-3 font-medium text-stone-800 whitespace-nowrap">
-                        {entry.profile?.name ?? <span className="text-stone-400 italic">deleted user</span>}
+                      <td className="px-4 py-3 font-medium text-ink whitespace-nowrap">
+                        {entry.profile?.name ?? <span className="text-ink/40 italic">deleted user</span>}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${actionColour(entry.action)}`}>
                           {entry.action}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-stone-600 max-w-xs truncate">{entry.detail}</td>
+                      <td className="px-4 py-3 text-ink/65 max-w-xs truncate">{entry.detail}</td>
                     </tr>
                   ))}
                 </tbody>

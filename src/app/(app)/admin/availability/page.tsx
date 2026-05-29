@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import PageHeader from '@/components/ui/page-header'
 
 export const metadata: Metadata = { title: 'Member Availability' }
 
@@ -40,41 +41,41 @@ export default async function AdminAvailabilityPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-4xl mx-auto px-5">
-          <h1 className="font-serif text-3xl font-medium">Member Availability</h1>
-          <p className="text-stone-500 text-sm mt-1">
-            Unavailability dates submitted by volunteers —{' '}
-            {members.length === 0 ? 'none yet' : `${members.length} member${members.length !== 1 ? 's' : ''}, ${(unavailability ?? []).length} date${(unavailability ?? []).length !== 1 ? 's' : ''} total`}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Member Availability"
+        maxWidth="max-w-5xl"
+        subtitle={`Unavailability dates submitted by volunteers — ${
+          members.length === 0
+            ? 'none yet'
+            : `${members.length} member${members.length !== 1 ? 's' : ''}, ${(unavailability ?? []).length} date${(unavailability ?? []).length !== 1 ? 's' : ''} total`
+        }`}
+      />
 
-      <div className="max-w-4xl mx-auto px-5 mt-6 space-y-4 pb-12">
+      <div className="max-w-4xl mx-auto px-5 space-y-4 pb-12">
         {members.length === 0 ? (
-          <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-10 text-center text-stone-400 text-sm">
+          <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-10 text-center text-ink/40 text-sm">
             No unavailability dates have been submitted yet.
           </div>
         ) : members.map(([userId, { name, role, dates }]) => (
-          <div key={userId} className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-stone-100 bg-stone-50">
+          <div key={userId} className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-sand/50 bg-paper-100">
               <div className="w-8 h-8 rounded-full bg-sage-600 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
                 {name.charAt(0)}
               </div>
               <div>
-                <p className="font-semibold text-stone-800">{name}</p>
-                <p className="text-xs text-stone-400 capitalize">{role}</p>
+                <p className="font-semibold text-ink">{name}</p>
+                <p className="text-xs text-ink/45 capitalize">{role}</p>
               </div>
-              <span className="ml-auto text-xs bg-white border border-stone-200 text-stone-600 px-2 py-0.5 rounded-full">
+              <span className="ml-auto text-xs bg-white border border-sand text-ink/65 px-2 py-0.5 rounded-full">
                 {dates.length} date{dates.length !== 1 ? 's' : ''}
               </span>
             </div>
-            <div className="divide-y divide-stone-50">
+            <div className="divide-y divide-sand/30">
               {dates.map(d => (
                 <div key={d.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="text-sm font-medium text-stone-700">{fmtDate(d.date)}</span>
+                  <span className="text-sm font-medium text-ink/80">{fmtDate(d.date)}</span>
                   {d.note && (
-                    <span className="text-xs text-stone-500 bg-stone-50 border border-stone-100 px-2 py-0.5 rounded">
+                    <span className="text-xs text-ink/60 bg-paper-100 border border-sand/50 px-2 py-0.5 rounded">
                       {d.note}
                     </span>
                   )}

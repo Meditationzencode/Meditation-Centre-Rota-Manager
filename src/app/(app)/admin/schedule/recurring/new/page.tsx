@@ -16,19 +16,18 @@ export default async function NewTemplatePage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-2xl mx-auto px-5">
-          <div className="flex items-center gap-2 text-sm text-stone-500 mb-1">
-            <Link href="/admin/schedule" className="hover:text-stone-700">Schedule</Link>
-            <span>/</span>
-            <Link href="/admin/schedule/recurring" className="hover:text-stone-700">Recurring</Link>
-            <span>/</span>
-            <span>New</span>
-          </div>
-          <h1 className="font-serif text-3xl font-medium">New Recurring Template</h1>
+      <div className="max-w-5xl mx-auto px-5 pt-8 pb-5">
+        <div className="flex items-center gap-2 text-sm text-ink/55 mb-1">
+          <Link href="/admin/schedule" className="hover:text-ink">Schedule</Link>
+          <span>/</span>
+          <Link href="/admin/schedule/recurring" className="hover:text-ink">Recurring</Link>
+          <span>/</span>
+          <span>New</span>
         </div>
+        <h1 className="font-serif text-3xl font-medium text-ink">New Recurring Template</h1>
+        <div className="mt-4 h-px bg-gradient-to-r from-gold-400/60 via-sand to-transparent" />
       </div>
-      <div className="max-w-2xl mx-auto px-5 mt-6">
+      <div className="max-w-2xl mx-auto px-5">
         <RecurringTemplateForm template={null} />
       </div>
     </div>

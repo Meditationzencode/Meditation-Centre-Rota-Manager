@@ -7,6 +7,8 @@ import {
   getWeekStart, fmtMonthYear, fmtTime,
 } from '@/lib/utils'
 import { dutyPill } from '@/lib/duty-colors'
+import PageHeader from '@/components/ui/page-header'
+import BrandMark from '@/components/ui/brand-mark'
 
 export const metadata: Metadata = { title: 'Rota – Month' }
 
@@ -65,18 +67,18 @@ export default async function MonthRotaPage({
 
   const today      = new Date().toISOString().slice(0, 10)
   const isManager  = profile.role === 'admin' || profile.role === 'coordinator'
+  const currentWeekStart = getWeekStart(today)
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-7xl mx-auto px-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="font-serif text-3xl font-medium">Rota</h1>
-            <p className="text-stone-500 text-sm mt-1">{fmtMonthYear(monthStart)}</p>
-          </div>
+      <PageHeader
+        title="Rota"
+        subtitle={fmtMonthYear(monthStart)}
+        maxWidth="max-w-7xl"
+        actions={
           <div className="flex items-center gap-3">
-            <div className="flex rounded-md border border-stone-200 overflow-hidden text-sm">
-              <Link href="/rota" className="px-3 py-1.5 text-stone-600 hover:bg-stone-50 border-r border-stone-200 transition-colors">
+            <div className="flex rounded-md border border-sand overflow-hidden text-sm">
+              <Link href="/rota" className="px-3 py-1.5 text-ink/65 hover:bg-paper-100 border-r border-sand transition-colors">
                 Week
               </Link>
               <span className="px-3 py-1.5 bg-sage-600 text-white font-medium">Month</span>
@@ -90,101 +92,120 @@ export default async function MonthRotaPage({
               </Link>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="max-w-7xl mx-auto px-5 mt-6 space-y-4">
+      <div className="max-w-7xl mx-auto px-5 space-y-4">
         {/* Month navigation */}
-        <div className="flex items-center justify-between bg-white border border-stone-200 rounded-xl px-5 py-3 shadow-sm">
+        <div className="flex items-center justify-between bg-white border border-sand/70 rounded-xl px-5 py-3 shadow-sm">
           <Link
             href={`/rota/month?month=${prevMonth}`}
-            className="text-sm font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1"
+            className="text-sm font-medium text-ink/65 hover:text-ink flex items-center gap-1"
           >
             ← Prev
           </Link>
-          <span className="font-serif text-base text-stone-700">{fmtMonthYear(monthStart)}</span>
+          <span className="font-serif text-base text-ink/80">{fmtMonthYear(monthStart)}</span>
           <Link
             href={`/rota/month?month=${nextMonthStart}`}
-            className="text-sm font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1"
+            className="text-sm font-medium text-ink/65 hover:text-ink flex items-center gap-1"
           >
             Next →
           </Link>
         </div>
 
         {/* Calendar — scrollable on mobile */}
-        <div className="overflow-x-auto rounded-xl border border-stone-200 shadow-sm">
-          <div className="min-w-[560px] bg-white overflow-hidden">
+        <div className="overflow-x-auto rounded-xl border border-sand/70 shadow-sm">
+          <div className="min-w-[560px] bg-white overflow-hidden relative">
             {/* Day headers */}
-            <div className="grid grid-cols-7 border-b border-stone-200 bg-stone-50">
+            <div className="grid grid-cols-7 border-b border-sand/60 bg-paper-100">
               {DAY_HEADERS.map(d => (
-                <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wider text-stone-400 py-2">
+                <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45 py-2">
                   {d}
                 </div>
               ))}
             </div>
 
             {/* Weeks */}
-            {weeks.map((week, wi) => (
-              <div key={wi} className={`grid grid-cols-7 ${wi < weeks.length - 1 ? 'border-b border-stone-100' : ''}`}>
-                {week.map(date => {
-                  const inMonth  = date >= monthStart && date <= monthEnd
-                  const isToday  = date === today
-                  const daySlots = slotsByDate.get(date) ?? []
-                  const weekLink = `/rota?week=${getWeekStart(date)}`
-
-                  return (
-                    <div
-                      key={date}
-                      className={`min-h-[90px] p-1.5 border-r border-stone-100 last:border-r-0 ${
-                        isToday ? 'bg-sage-50/40' : !inMonth ? 'bg-stone-50/60' : ''
-                      }`}
-                    >
-                      <Link href={weekLink}>
-                        <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded-full mb-1 transition-colors ${
-                          isToday
-                            ? 'bg-sage-600 text-white'
-                            : inMonth
-                            ? 'text-stone-700 hover:bg-stone-100'
-                            : 'text-stone-300'
-                        }`}>
-                          {parseInt(date.slice(8), 10)}
-                        </span>
-                      </Link>
-
-                      <div className="space-y-0.5">
-                        {daySlots.slice(0, 3).map(slot => {
-                          const filled = (signups ?? []).filter(s => s.slot_id === slot.id).length >= slot.max_volunteers
-                          const mine   = mySignupSlotIds.has(slot.id)
-                          return (
-                            <Link
-                              key={slot.id}
-                              href={weekLink}
-                              className={`block text-[10px] px-1.5 py-0.5 rounded truncate leading-tight hover:opacity-80 transition-opacity ${
-                                mine   ? 'bg-sage-100 text-sage-800' :
-                                filled ? 'bg-red-50 text-red-600' :
-                                         dutyPill(slot.duty)
-                              }`}
-                            >
-                              {fmtTime(slot.start_time)} {slot.duty}
-                            </Link>
-                          )
-                        })}
-                        {daySlots.length > 3 && (
-                          <Link href={weekLink} className="block text-[10px] text-stone-400 px-1.5 hover:text-stone-600">
-                            +{daySlots.length - 3} more
-                          </Link>
-                        )}
-                      </div>
+            {weeks.map((week, wi) => {
+              const weekStart = week[0]
+              const isCurrentWeek = weekStart === currentWeekStart
+              const weekHasSlots = week.some(d => (slotsByDate.get(d) ?? []).length > 0)
+              return (
+                <div
+                  key={wi}
+                  className={`grid grid-cols-7 relative ${
+                    wi < weeks.length - 1 ? 'border-b border-sand/30' : ''
+                  } ${isCurrentWeek ? 'bg-gold-50/40' : ''}`}
+                >
+                  {/* Decorative lotus for entirely empty weeks (within month) */}
+                  {!weekHasSlots && week.some(d => d >= monthStart && d <= monthEnd) && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
+                      <BrandMark size={64} withRing={false} />
                     </div>
-                  )
-                })}
-              </div>
-            ))}
+                  )}
+                  {week.map(date => {
+                    const inMonth  = date >= monthStart && date <= monthEnd
+                    const isToday  = date === today
+                    const daySlots = slotsByDate.get(date) ?? []
+                    const weekLink = `/rota?week=${getWeekStart(date)}`
+
+                    return (
+                      <div
+                        key={date}
+                        className={`min-h-[90px] p-1.5 border-r border-sand/30 last:border-r-0 relative ${
+                          !inMonth ? 'bg-paper-100/40' : ''
+                        }`}
+                      >
+                        <Link href={weekLink}>
+                          <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded-full mb-1 transition-colors ${
+                            isToday
+                              ? 'bg-sage-600 text-white shadow-sm'
+                              : inMonth
+                              ? 'text-ink/75 hover:bg-paper-200/60'
+                              : 'text-ink/25'
+                          }`}>
+                            {parseInt(date.slice(8), 10)}
+                          </span>
+                        </Link>
+
+                        <div className="space-y-0.5">
+                          {daySlots.slice(0, 3).map(slot => {
+                            const filled = (signups ?? []).filter(s => s.slot_id === slot.id).length >= slot.max_volunteers
+                            const mine   = mySignupSlotIds.has(slot.id)
+                            return (
+                              <Link
+                                key={slot.id}
+                                href={weekLink}
+                                className={`block text-[10px] px-1.5 py-0.5 rounded truncate leading-tight hover:opacity-80 transition-opacity ${
+                                  mine   ? 'bg-sage-100 text-sage-800' :
+                                  filled ? 'bg-red-50 text-red-600' :
+                                           dutyPill(slot.duty)
+                                }`}
+                              >
+                                {fmtTime(slot.start_time)} {slot.duty}
+                              </Link>
+                            )
+                          })}
+                          {daySlots.length > 3 && (
+                            <Link
+                              href={weekLink}
+                              className="inline-block text-[10px] text-ink/50 bg-paper-100 hover:bg-paper-200/70 px-1.5 py-px rounded-full"
+                            >
+                              +{daySlots.length - 3} more
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
           </div>
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-stone-400 pb-2">
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-ink/45 pb-2">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> My slot
           </span>
@@ -197,7 +218,9 @@ export default async function MonthRotaPage({
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-300 inline-block" /> Evening
           </span>
-          <span className="text-stone-300 hidden sm:inline">Click any day to view that week</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-gold-50 border border-gold-200 inline-block" /> Current week
+          </span>
         </div>
       </div>
     </div>

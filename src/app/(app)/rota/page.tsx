@@ -5,6 +5,7 @@ import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { getWeekStart, addDays, fmtDate, fmtDateLong } from '@/lib/utils'
 import RotaGrid from '@/components/rota/rota-grid'
 import PrintButton from '@/components/rota/print-button'
+import PageHeader from '@/components/ui/page-header'
 
 export const metadata: Metadata = { title: 'Rota' }
 
@@ -72,23 +73,22 @@ export default async function RotaPage({
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-stone-100 to-sage-50 border-b border-stone-200 py-7">
-        <div className="max-w-7xl mx-auto px-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="font-serif text-3xl font-medium">Rota</h1>
-            <p className="text-stone-500 text-sm mt-1">{weekLabel}</p>
-          </div>
+      <PageHeader
+        title="Rota"
+        subtitle={weekLabel}
+        maxWidth="max-w-7xl"
+        actions={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
-            <div className="flex rounded-md border border-stone-200 overflow-hidden text-sm">
+            <div className="flex rounded-md border border-sand overflow-hidden text-sm">
               <span className="px-3 py-1.5 bg-sage-600 text-white font-medium">Week</span>
-              <Link href="/rota/month" className="px-3 py-1.5 text-stone-600 hover:bg-stone-50 border-l border-stone-200 transition-colors">
+              <Link href="/rota/month" className="px-3 py-1.5 text-ink/65 hover:bg-paper-100 border-l border-sand transition-colors">
                 Month
               </Link>
             </div>
             <PrintButton />
             <Link
               href="/api/rota/export"
-              className="text-sm font-medium text-stone-600 hover:text-stone-900 border border-stone-200 rounded-md px-3 py-1.5 hover:bg-stone-50 transition-colors flex items-center gap-1.5"
+              className="text-sm font-medium text-ink/65 hover:text-ink border border-sand rounded-md px-3 py-1.5 hover:bg-paper-100 transition-colors flex items-center gap-1.5"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -104,29 +104,29 @@ export default async function RotaPage({
               </Link>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="max-w-7xl mx-auto px-5 mt-6 space-y-5">
+      <div className="max-w-7xl mx-auto px-5 space-y-5">
         {/* Week navigation */}
-        <div className="flex items-center justify-between bg-white border border-stone-200 rounded-xl px-5 py-3 shadow-sm">
+        <div className="flex items-center justify-between bg-white border border-sand/70 rounded-xl px-5 py-3 shadow-sm">
           <Link
             href={`/rota?week=${prevWeek}`}
-            className="text-sm font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1"
+            className="text-sm font-medium text-ink/65 hover:text-ink flex items-center gap-1"
           >
             ← Prev
           </Link>
           <div className="flex flex-col items-center gap-1">
-            <span className="font-serif text-base text-stone-700">{weekLabel}</span>
+            <span className="font-serif text-base text-ink/80">{weekLabel}</span>
             {!isThisWeek && (
-              <Link href="/rota" className="text-xs text-sage-600 hover:text-sage-800 font-medium">
+              <Link href="/rota" className="text-xs text-sage-700 hover:text-sage-800 font-medium">
                 Today
               </Link>
             )}
           </div>
           <Link
             href={`/rota?week=${nextWeek}`}
-            className="text-sm font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1"
+            className="text-sm font-medium text-ink/65 hover:text-ink flex items-center gap-1"
           >
             Next →
           </Link>
@@ -143,12 +143,12 @@ export default async function RotaPage({
         />
 
         {/* Legend */}
-        <div className="flex gap-5 text-xs text-stone-400 pb-2">
+        <div className="flex gap-5 text-xs text-ink/45 pb-2">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> My slot
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" /> 1 spot left
+            <span className="w-2.5 h-2.5 rounded-full bg-gold-500 inline-block" /> 1 spot left
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" /> Full

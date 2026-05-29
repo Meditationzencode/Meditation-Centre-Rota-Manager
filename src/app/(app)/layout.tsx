@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="flex-1 pb-12">
         {children}
       </main>
-      <footer className="border-t border-stone-200 bg-stone-100 py-4 text-center text-xs text-stone-400 space-y-1">
+      <footer className="border-t border-sand/70 bg-paper-50 py-4 text-center text-xs text-ink/45 space-y-1">
         <p>Bodhi Grove Meditation Centre &mdash; Sangha Rota &mdash; <em>Demo version. No real data.</em></p>
         <p>
           Built by{' '}
@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             href="https://github.com/Meditationzencode"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-stone-600 transition-colors"
+            className="underline hover:text-ink/70 transition-colors"
           >
             MeditationzenCode
           </a>
