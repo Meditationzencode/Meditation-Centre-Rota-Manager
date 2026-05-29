@@ -52,20 +52,26 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1 flex-1">
-          {navLinks.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                isActive(link.href)
-                  ? 'bg-sage-100/70 text-sage-800'
-                  : 'text-ink/65 hover:bg-paper-200/60 hover:text-ink'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden md:flex items-stretch h-full flex-1">
+          {navLinks.map(link => {
+            const active = isActive(link.href)
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative flex items-center px-3.5 text-sm font-medium transition-colors ${
+                  active
+                    ? 'text-sage-800 bg-sage-100/60'
+                    : 'text-ink/65 hover:text-ink hover:bg-paper-200/50'
+                }`}
+              >
+                {link.label}
+                {active && (
+                  <span className="absolute left-0 right-0 bottom-[-1px] h-[2px] bg-sage-600" />
+                )}
+              </Link>
+            )
+          })}
         </nav>
 
         {/* User menu */}
@@ -75,7 +81,7 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
             aria-expanded={open}
             className="flex items-center gap-2 border border-sand rounded-full pl-1 pr-3 py-1 hover:bg-paper-200/60 transition-colors"
           >
-            <div className="w-7 h-7 rounded-full bg-sage-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-sage-100 text-sage-800 flex items-center justify-center text-xs font-semibold flex-shrink-0">
               {profile.name.charAt(0)}
             </div>
             <span className="text-sm font-medium text-ink/80 hidden sm:block">{profile.name.split(' ')[0]}</span>

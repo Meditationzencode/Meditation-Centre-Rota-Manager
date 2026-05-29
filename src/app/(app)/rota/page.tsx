@@ -11,6 +11,13 @@ export const metadata: Metadata = { title: 'Rota' }
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+function fmtDayShort(iso: string) {
+  // "25 May" — no weekday repetition
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', timeZone: 'UTC',
+  })
+}
+
 export default async function RotaPage({
   searchParams,
 }: {
@@ -66,7 +73,7 @@ export default async function RotaPage({
           volunteers: slotSignups.map(sig => (sig.profile as { name: string } | null)?.name ?? 'Unknown'),
         }
       })
-    return { date, label: `${dayName} ${fmtDate(date)}`, slots: daySlots }
+    return { date, label: `${dayName} ${fmtDayShort(date)}`, slots: daySlots }
   })
 
   const isManager = profile.role === 'admin' || profile.role === 'coordinator'

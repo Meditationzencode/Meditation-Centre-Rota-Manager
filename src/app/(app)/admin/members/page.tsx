@@ -60,16 +60,19 @@ export default async function MembersPage() {
                       No other members found.
                     </td>
                   </tr>
-                ) : others.map(m => {
+                ) : others.map((m, i) => {
                   const status = m.active ? STATUS_STYLES.active : STATUS_STYLES.inactive
                   return (
                     <tr
                       key={m.id}
-                      className={`group hover:bg-paper-100/60 transition-colors ${!m.active ? 'opacity-60' : ''}`}
+                      className={`group relative transition-colors ${
+                        i % 2 === 1 ? 'bg-paper-50/60' : ''
+                      } hover:bg-paper-100/80 ${!m.active ? 'opacity-60' : ''}`}
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5 relative">
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-gold-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-sage-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-sage-100 text-sage-800 flex items-center justify-center text-xs font-semibold flex-shrink-0">
                             {m.name.charAt(0)}
                           </div>
                           <span className="font-medium text-ink">{m.name}</span>

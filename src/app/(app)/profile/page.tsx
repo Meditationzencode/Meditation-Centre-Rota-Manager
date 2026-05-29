@@ -46,7 +46,7 @@ export default async function ProfilePage() {
       <div className="max-w-2xl mx-auto px-5 space-y-5">
         {/* Profile card */}
         <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-5 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-sage-600 text-white flex items-center justify-center text-2xl font-semibold font-serif flex-shrink-0">
+          <div className="w-14 h-14 rounded-full bg-sage-100 text-sage-800 flex items-center justify-center text-2xl font-semibold font-serif flex-shrink-0">
             {profile.name.charAt(0)}
           </div>
           <div>
@@ -72,7 +72,7 @@ export default async function ProfilePage() {
         {/* Upcoming sign-ups */}
         <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
-            <h2 className="font-serif text-lg text-ink">My Sign-ups</h2>
+            <h2 className="font-serif text-lg font-medium text-ink">My Sign-ups</h2>
             <a
               href="/api/rota/export"
               className="text-xs text-ink/55 hover:text-ink border border-sand rounded-md px-2.5 py-1.5 hover:bg-paper-100 transition-colors flex items-center gap-1"

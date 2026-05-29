@@ -17,9 +17,12 @@ export const STATUS_STYLES = {
   full:     { dot: 'bg-red-400',  text: 'text-red-600'  },
 }
 
-// "spots left" pills used on the rota grids.
+// "spots filled" pills — used on the rota grids and the Schedule table.
+// Mental model: empty needs attention (gold), partial is fine (sage),
+// full is good (stronger sage). Red is reserved for genuine errors.
 export const COUNT_PILL = {
-  open:  'bg-sage-100 text-sage-700',
-  low:   'bg-gold-100 text-gold-700',
-  full:  'bg-red-100 text-red-600',
+  empty:   'bg-gold-100 text-gold-700',
+  partial: 'bg-sage-100 text-sage-800',
+  full:    'bg-sage-200 text-sage-900',
+  over:    'bg-red-100 text-red-700',
 }

@@ -4,6 +4,10 @@ import { redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
 import PageHeader from '@/components/ui/page-header'
+import {
+  UsersIcon, HandshakeIcon, SwapIcon, ClipboardIcon,
+  PlusIcon, CalendarIcon, UserPlusIcon,
+} from '@/components/ui/icons'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -92,28 +96,30 @@ export default async function DashboardPage() {
         {stats && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Members',          value: stats.members,         icon: '👤', href: '/admin/members',  alert: false },
-              { label: 'Active Volunteers',value: stats.volunteers,      icon: '🤝', href: '/admin/members',  alert: false },
-              { label: 'Pending Swaps',    value: stats.pendingSwaps,    icon: '🔄', href: '/admin/swaps',    alert: stats.pendingSwaps > 0 },
-              { label: 'Unassigned Slots', value: stats.unassignedSlots, icon: '📋', href: '/admin/schedule', alert: stats.unassignedSlots > 0 },
+              { label: 'Members',          value: stats.members,         Icon: UsersIcon,     href: '/admin/members',  alert: false },
+              { label: 'Active Volunteers',value: stats.volunteers,      Icon: HandshakeIcon, href: '/admin/members',  alert: false },
+              { label: 'Pending Swaps',    value: stats.pendingSwaps,    Icon: SwapIcon,      href: '/admin/swaps',    alert: stats.pendingSwaps > 0 },
+              { label: 'Unassigned Slots', value: stats.unassignedSlots, Icon: ClipboardIcon, href: '/admin/schedule', alert: stats.unassignedSlots > 0 },
             ].map(s => (
               <Link
                 key={s.label}
                 href={s.href}
-                className={`bg-white border rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow transition-shadow ${
-                  s.alert ? 'border-gold-200 ring-1 ring-gold-100' : 'border-sand/70'
+                className={`bg-white border rounded-xl px-4 py-4 flex items-center gap-3.5 shadow-sm hover:shadow transition-shadow ${
+                  s.alert ? 'border-gold-200' : 'border-sand/70'
                 }`}
               >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${
-                  s.alert ? 'bg-gold-50' : 'bg-paper-100'
+                <div className={`w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  s.alert
+                    ? 'bg-gold-100 text-gold-700'
+                    : 'bg-sage-50 text-sage-700'
                 }`}>
-                  {s.icon}
+                  <s.Icon size={22} />
                 </div>
-                <div>
-                  <div className={`text-2xl font-serif font-semibold leading-none ${s.alert ? 'text-gold-700' : 'text-ink'}`}>
+                <div className="min-w-0">
+                  <div className={`font-serif font-medium text-[26px] leading-none ${s.alert ? 'text-gold-700' : 'text-ink'}`}>
                     {s.value}
                   </div>
-                  <div className="text-xs text-ink/55 mt-0.5">{s.label}</div>
+                  <div className="text-[13px] text-ink/75 mt-1.5 leading-tight">{s.label}</div>
                 </div>
               </Link>
             ))}
@@ -126,7 +132,7 @@ export default async function DashboardPage() {
             {/* My upcoming duties */}
             <section className="bg-white border border-sand/70 rounded-xl shadow-sm">
               <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
-                <h2 className="font-serif text-lg text-ink">My Upcoming Duties</h2>
+                <h2 className="font-serif text-lg font-medium text-ink">My Upcoming Duties</h2>
                 <Link href="/rota" className="text-xs text-sage-700 hover:underline">View rota →</Link>
               </div>
               {myUpcoming.length === 0 ? (
@@ -165,7 +171,7 @@ export default async function DashboardPage() {
             {/* Open slots */}
             <section className="bg-white border border-sand/70 rounded-xl shadow-sm">
               <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
-                <h2 className="font-serif text-lg text-ink">Open Slots — Next 7 Days</h2>
+                <h2 className="font-serif text-lg font-medium text-ink">Open Slots — Next 7 Days</h2>
                 <Link href="/rota" className="text-xs text-sage-700 hover:underline">Sign up →</Link>
               </div>
               {openSlots.length === 0 ? (
@@ -199,21 +205,23 @@ export default async function DashboardPage() {
         {/* Quick actions — managers only */}
         {isManager && (
           <section>
-            <h2 className="font-serif text-xl mb-4 text-ink">Quick Actions</h2>
+            <h2 className="font-serif text-xl font-medium mb-4 text-ink">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { href: '/admin/schedule/new', icon: '＋', label: 'Add Rota Slot'     },
-                { href: '/admin/schedule',     icon: '📅', label: 'Manage Schedule'   },
+                { href: '/admin/schedule/new', Icon: PlusIcon,     label: 'Add Rota Slot'     },
+                { href: '/admin/schedule',     Icon: CalendarIcon, label: 'Manage Schedule'   },
                 ...(profile.role === 'admin' ? [
-                  { href: '/admin/members/new', icon: '👤', label: 'Add Member'        },
-                  { href: '/admin/members',     icon: '👥', label: 'Manage Members'    },
+                  { href: '/admin/members/new', Icon: UserPlusIcon, label: 'Add Member'        },
+                  { href: '/admin/members',     Icon: UsersIcon,    label: 'Manage Members'    },
                 ] : []),
               ].map(a => (
                 <Link
                   key={a.href} href={a.href}
-                  className="bg-white border border-sand/70 rounded-xl p-4 flex flex-col items-center gap-2 text-center shadow-sm hover:shadow hover:border-mist/70 transition-all group"
+                  className="bg-white border border-sand/70 rounded-xl p-5 flex flex-col items-center gap-2.5 text-center shadow-sm hover:shadow hover:border-mist/70 transition-all group"
                 >
-                  <span className="text-2xl">{a.icon}</span>
+                  <span className="text-ink/45 group-hover:text-sage-700 transition-colors">
+                    <a.Icon size={22} />
+                  </span>
                   <span className="text-xs font-medium text-ink/65 group-hover:text-ink">{a.label}</span>
                 </Link>
               ))}

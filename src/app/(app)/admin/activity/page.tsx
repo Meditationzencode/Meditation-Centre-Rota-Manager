@@ -6,21 +6,57 @@ import PageHeader from '@/components/ui/page-header'
 
 export const metadata: Metadata = { title: 'Activity Log' }
 
+// Four-tone signal system:
+//   positive  — sage    (created, signed up, activated)
+//   info      — mist    (updated, swap requested — neutral admin action)
+//   attention — gold    (cancelled, deactivated — soft warning)
+//   destructive — red   (deleted)
 const ACTION_COLOURS: Record<string, string> = {
-  'signup.add':       'bg-sage-100 text-sage-800',
+  'signup.add':       'bg-sage-200 text-sage-900',
   'signup.cancel':    'bg-gold-100 text-gold-700',
-  'slot.create':      'bg-mist/30 text-sage-800',
-  'slot.update':      'bg-paper-200 text-ink/70',
+  'slot.create':      'bg-sage-200 text-sage-900',
+  'slot.update':      'bg-mist/40 text-sage-900',
   'slot.delete':      'bg-red-100 text-red-700',
-  'member.create':    'bg-mist/30 text-sage-800',
-  'member.update':    'bg-paper-200 text-ink/70',
+  'member.create':    'bg-sage-200 text-sage-900',
+  'member.update':    'bg-mist/40 text-sage-900',
   'member.delete':    'bg-red-100 text-red-700',
-  'member.activate':  'bg-sage-100 text-sage-800',
+  'member.activate':  'bg-sage-200 text-sage-900',
   'member.deactivate':'bg-gold-100 text-gold-700',
+  'swap.request':     'bg-mist/40 text-sage-900',
+  'swap.approve':     'bg-sage-200 text-sage-900',
+  'swap.reject':      'bg-gold-100 text-gold-700',
 }
 
 function actionColour(action: string) {
-  return ACTION_COLOURS[action] ?? 'bg-paper-200 text-ink/70'
+  return ACTION_COLOURS[action] ?? 'bg-sand/50 text-ink/65'
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  'signup.add':       'Signed up',
+  'signup.cancel':    'Cancelled signup',
+  'slot.create':      'Slot created',
+  'slot.update':      'Slot updated',
+  'slot.delete':      'Slot deleted',
+  'member.create':    'Member added',
+  'member.update':    'Member updated',
+  'member.delete':    'Member deleted',
+  'member.activate':  'Activated',
+  'member.deactivate':'Deactivated',
+  'swap.request':     'Swap requested',
+  'swap.approve':     'Swap approved',
+  'swap.reject':      'Swap rejected',
+}
+
+function actionLabel(action: string) {
+  return ACTION_LABELS[action] ?? action.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+// Strip user-facing UUIDs from audit detail text — keep just the first 6
+// characters as an opaque short ID, so the line still gives the reader an
+// anchor without showing a 36-character machine identifier.
+const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi
+function cleanDetail(detail: string) {
+  return detail.replace(UUID_RE, m => `#${m.slice(0, 6)}`)
 }
 
 export default async function ActivityPage() {
@@ -63,9 +99,15 @@ export default async function ActivityPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sand/40">
-                  {log.map(entry => (
-                    <tr key={entry.id} className="hover:bg-paper-100/60 transition-colors">
-                      <td className="px-4 py-3 text-ink/45 whitespace-nowrap text-xs">
+                  {log.map((entry, i) => (
+                    <tr
+                      key={entry.id}
+                      className={`group relative transition-colors ${
+                        i % 2 === 1 ? 'bg-paper-50/60' : ''
+                      } hover:bg-paper-100/80`}
+                    >
+                      <td className="px-4 py-3.5 text-ink/45 whitespace-nowrap text-xs relative">
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-gold-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         {new Date(entry.created_at).toLocaleString('en-GB', {
                           day: '2-digit', month: 'short', year: 'numeric',
                           hour: '2-digit', minute: '2-digit',
@@ -75,11 +117,11 @@ export default async function ActivityPage() {
                         {entry.profile?.name ?? <span className="text-ink/40 italic">deleted user</span>}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${actionColour(entry.action)}`}>
-                          {entry.action}
+                        <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${actionColour(entry.action)}`}>
+                          {actionLabel(entry.action)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-ink/65 max-w-xs truncate">{entry.detail}</td>
+                      <td className="px-4 py-3 text-ink/70 max-w-xs truncate">{cleanDetail(entry.detail)}</td>
                     </tr>
                   ))}
                 </tbody>

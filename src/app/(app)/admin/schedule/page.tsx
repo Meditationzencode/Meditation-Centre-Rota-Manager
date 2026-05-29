@@ -81,14 +81,23 @@ export default async function SchedulePage() {
                     </td>
                   </tr>
                 ) : enriched.map(slot => {
-                  const pillTone = slot.signupCount >= slot.max_volunteers
+                  const pillTone = slot.signupCount === 0
+                    ? COUNT_PILL.empty
+                    : slot.signupCount >= slot.max_volunteers
                     ? COUNT_PILL.full
-                    : slot.signupCount === slot.max_volunteers - 1
-                    ? COUNT_PILL.low
-                    : COUNT_PILL.open
+                    : COUNT_PILL.partial
                   return (
-                    <tr key={slot.id} className="group hover:bg-paper-100/60 transition-colors">
-                      <td className="px-4 py-3 whitespace-nowrap font-medium text-ink">{fmtDate(slot.date)}</td>
+                    <tr
+                      key={slot.id}
+                      data-row-index={enriched.indexOf(slot)}
+                      className={`group relative transition-colors ${
+                        enriched.indexOf(slot) % 2 === 1 ? 'bg-paper-50/60' : ''
+                      } hover:bg-paper-100/80`}
+                    >
+                      <td className="px-4 py-3.5 whitespace-nowrap font-medium text-ink relative">
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-gold-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {fmtDate(slot.date)}
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-ink/55">
                         {fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}
                       </td>

@@ -80,7 +80,7 @@ export default async function RecurringPage({
 
         {/* Generate slots form */}
         <section className="bg-white border border-sand/70 rounded-xl shadow-sm p-5">
-          <h2 className="font-serif text-lg mb-4 text-ink">Generate Slots</h2>
+          <h2 className="font-serif text-lg font-medium mb-4 text-ink">Generate Slots</h2>
           <form action={generateSlots} className="flex flex-wrap items-end gap-3">
             <div>
               <label className="block text-sm font-medium text-ink/75 mb-1">From</label>
@@ -118,9 +118,15 @@ export default async function RecurringPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sand/40">
-                  {list.map(t => (
-                    <tr key={t.id} className={`group hover:bg-paper-100/60 transition-colors ${!t.active ? 'opacity-60' : ''}`}>
-                      <td className="px-4 py-3">
+                  {list.map((t, i) => (
+                    <tr
+                      key={t.id}
+                      className={`group relative transition-colors ${
+                        i % 2 === 1 ? 'bg-paper-50/60' : ''
+                      } hover:bg-paper-100/80 ${!t.active ? 'opacity-60' : ''}`}
+                    >
+                      <td className="px-4 py-3.5 relative">
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-gold-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex flex-wrap gap-1">
                           {t.days_of_week.map(d => (
                             <span key={d} className="text-[10px] font-semibold bg-sage-100 text-sage-800 px-1.5 py-0.5 rounded">

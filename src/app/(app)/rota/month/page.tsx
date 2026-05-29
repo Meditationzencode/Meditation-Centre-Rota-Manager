@@ -213,10 +213,10 @@ export default async function MonthRotaPage({
             <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" /> Full
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-300 inline-block" /> Morning
+            <span className="w-2.5 h-2.5 rounded-full bg-gold-400 inline-block" /> Morning
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-300 inline-block" /> Evening
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8d9bb1] inline-block" /> Evening
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm bg-gold-50 border border-gold-200 inline-block" /> Current week

@@ -7,6 +7,7 @@ import { signUpForSlot, cancelSignup, requestSwap } from '@/lib/actions'
 import { createClient } from '@/lib/supabase/client'
 import { fmtTime } from '@/lib/utils'
 import { dutyBorder } from '@/lib/duty-colors'
+import { PinIcon, PencilIcon } from '@/components/ui/icons'
 import type { ActionResult } from '@/lib/types'
 
 interface SlotData {
@@ -57,23 +58,32 @@ export default function RotaGrid({ days, weekStart, isManager, canSignUp, today 
   }, [router])
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-7 gap-2">
       {days.map(day => {
         const isToday = day.date === today
+        const [dayName, ...rest] = day.label.split(' ')
+        const dateLabel = rest.join(' ')
         return (
           <div key={day.date} className="flex flex-col">
-            <div className={`text-center text-[11px] font-semibold uppercase tracking-[0.12em] border rounded-t-lg px-2 py-1.5 ${
+            <div className={`relative text-center border rounded-t-lg px-2 py-2 ${
               isToday
-                ? 'bg-sage-600 text-white border-sage-500'
-                : 'text-ink/55 bg-paper-100 border-sand/60'
+                ? 'bg-sage-50 border-sage-300'
+                : 'bg-paper-100 border-sand/60'
             }`}>
-              {day.label.split(' ').slice(0, 1)}{' '}
-              <span className={isToday ? 'text-sage-100 font-normal' : 'text-ink/35 font-normal'}>
-                {day.label.split(' ').slice(1).join(' ')}
-              </span>
+              {isToday && <span className="absolute inset-x-3 top-0 h-[3px] bg-sage-600 rounded-b" />}
+              <div className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                isToday ? 'text-sage-800' : 'text-ink/55'
+              }`}>
+                {dayName}
+              </div>
+              <div className={`text-[11px] mt-0.5 ${
+                isToday ? 'text-sage-800 font-semibold' : 'text-ink/45'
+              }`}>
+                {dateLabel}
+              </div>
             </div>
             <div className={`flex-1 border border-t-0 rounded-b-lg p-1.5 space-y-1.5 min-h-[80px] ${
-              isToday ? 'border-sage-300 bg-sage-50/40' : 'border-sand/60 bg-white'
+              isToday ? 'border-sage-300 bg-sage-50/30' : 'border-sand/60 bg-white'
             }`}>
               {day.slots.length === 0 ? (
                 <p className="text-[11px] text-ink/30 text-center py-3">—</p>
@@ -152,8 +162,9 @@ function SlotCard({
           Cancelled
         </span>
       )}
-      <p className="text-ink/45 flex items-center gap-0.5">
-        <span>📍</span> {slot.location}
+      <p className="text-ink/45 flex items-center gap-1 mt-0.5">
+        <PinIcon size={10} className="text-mist shrink-0" />
+        <span className="truncate">{slot.location}</span>
       </p>
 
       {slot.volunteers.length > 0 && (
@@ -207,7 +218,7 @@ function SlotCard({
                 <button
                   type="submit"
                   disabled={signupPending}
-                  className="text-[10px] font-medium px-1.5 py-0.5 bg-sage-600 text-white rounded hover:bg-sage-700 disabled:opacity-50 transition-colors"
+                  className="text-[10px] font-medium px-1.5 py-0.5 border border-sage-300 text-sage-800 bg-white rounded hover:bg-sage-600 hover:text-white hover:border-sage-600 disabled:opacity-50 transition-colors"
                 >
                   {signupPending ? '…' : 'Sign up'}
                 </button>

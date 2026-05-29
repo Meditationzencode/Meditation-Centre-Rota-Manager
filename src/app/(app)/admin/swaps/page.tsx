@@ -59,7 +59,7 @@ export default async function SwapsPage() {
 
         {/* Pending */}
         <section>
-          <h2 className="font-serif text-xl mb-3 text-ink">
+          <h2 className="font-serif text-xl font-medium mb-3 text-ink">
             Pending
             {pending.length > 0 && (
               <span className="ml-2 text-sm font-sans font-semibold bg-gold-100 text-gold-700 px-2 py-0.5 rounded-full">
@@ -83,7 +83,7 @@ export default async function SwapsPage() {
         {/* Resolved */}
         {resolved.length > 0 && (
           <section>
-            <h2 className="font-serif text-xl mb-3 text-ink">Recent Decisions</h2>
+            <h2 className="font-serif text-xl font-medium mb-3 text-ink">Recent Decisions</h2>
             <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
               <ul className="divide-y divide-sand/40">
                 {resolved.map(swap => (

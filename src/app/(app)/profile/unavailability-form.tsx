@@ -18,34 +18,34 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
   }
 
   return (
-    <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-stone-100">
-        <h2 className="font-serif text-lg">Unavailability</h2>
-        <p className="text-sm text-stone-500 mt-0.5">Mark dates you cannot volunteer — coordinators will see this when scheduling.</p>
+    <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-sand/50">
+        <h2 className="font-serif text-lg font-medium text-ink">Unavailability</h2>
+        <p className="text-sm text-ink/55 mt-0.5">Mark dates you cannot volunteer — coordinators will see this when scheduling.</p>
       </div>
 
       {/* Add form */}
-      <form action={formAction} className="px-5 py-4 border-b border-stone-100 flex flex-col sm:flex-row gap-3">
+      <form action={formAction} className="px-5 py-4 border-b border-sand/50 flex flex-col sm:flex-row gap-3">
         <input type="hidden" name="user_id" />
         <div className="flex-1 flex gap-3">
           <div className="flex-shrink-0">
-            <label className="text-xs text-stone-500 block mb-1">Date</label>
+            <label className="text-xs text-ink/55 block mb-1">Date</label>
             <input
               type="date"
               name="date"
               min={today}
               required
-              className="block border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage-500"
+              className="block border border-sand rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mist"
             />
           </div>
           <div className="flex-1 min-w-0">
-            <label className="text-xs text-stone-500 block mb-1">Note (optional)</label>
+            <label className="text-xs text-ink/55 block mb-1">Note (optional)</label>
             <input
               type="text"
               name="note"
               placeholder="e.g. Holiday"
               maxLength={100}
-              className="block w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage-500"
+              className="block w-full border border-sand rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mist"
             />
           </div>
         </div>
@@ -65,19 +65,19 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
 
       {/* List */}
       {upcoming.length === 0 ? (
-        <div className="px-5 py-6 text-center text-stone-400 text-sm">No upcoming unavailability marked.</div>
+        <div className="px-5 py-6 text-center text-ink/40 text-sm">No upcoming unavailability marked.</div>
       ) : (
-        <ul className="divide-y divide-stone-100">
+        <ul className="divide-y divide-sand/40">
           {upcoming.map(entry => (
             <li key={entry.id} className="flex items-center gap-3 px-5 py-3">
-              <span className="text-xs font-semibold text-red-700 uppercase tracking-wide w-20 flex-shrink-0">
+              <span className="text-xs font-semibold text-gold-700 uppercase tracking-wide w-20 flex-shrink-0">
                 {new Date(`${entry.date}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}
               </span>
-              <span className="flex-1 text-sm text-stone-600">{entry.note || '—'}</span>
+              <span className="flex-1 text-sm text-ink/70">{entry.note || '—'}</span>
               <button
                 onClick={() => handleRemove(entry.id)}
                 disabled={removing}
-                className="text-xs text-stone-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                className="text-xs text-ink/45 hover:text-red-600 transition-colors disabled:opacity-50"
                 aria-label="Remove"
               >
                 Remove

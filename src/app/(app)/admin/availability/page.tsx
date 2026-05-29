@@ -59,7 +59,7 @@ export default async function AdminAvailabilityPage() {
         ) : members.map(([userId, { name, role, dates }]) => (
           <div key={userId} className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-sand/50 bg-paper-100">
-              <div className="w-8 h-8 rounded-full bg-sage-600 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-sage-100 text-sage-800 flex items-center justify-center text-sm font-semibold flex-shrink-0">
                 {name.charAt(0)}
               </div>
               <div>
