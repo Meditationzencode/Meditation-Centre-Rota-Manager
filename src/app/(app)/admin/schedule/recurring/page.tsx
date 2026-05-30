@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fmtTime } from '@/lib/utils'
-import { generateSlots, deleteTemplate } from '@/lib/actions'
+import { generateSlots } from '@/lib/actions'
+import DeleteTemplateButton from './delete-template-button'
 import type { RecurringTemplate } from '@/lib/types'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
 
 export const metadata: Metadata = { title: 'Recurring Templates' }
 
@@ -79,7 +81,7 @@ export default async function RecurringPage({
         )}
 
         {/* Generate slots form */}
-        <section className="bg-white border border-sand/70 rounded-xl shadow-sm p-5">
+        <Card className="p-5">
           <h2 className="font-serif text-lg font-medium mb-4 text-ink">Generate Slots</h2>
           <form action={generateSlots} className="flex flex-wrap items-end gap-3">
             <div>
@@ -98,10 +100,10 @@ export default async function RecurringPage({
             </button>
           </form>
           <p className="text-xs text-ink/45 mt-2">Creates slots for all active templates within the date range. Existing slots are not duplicated.</p>
-        </section>
+        </Card>
 
         {/* Template list */}
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+        <Card clip>
           {list.length === 0 ? (
             <div className="px-5 py-12 text-center text-ink/40 text-sm">
               No templates yet.{' '}
@@ -112,8 +114,16 @@ export default async function RecurringPage({
               <table className="w-full text-sm">
                 <thead className="bg-paper-100 border-b border-sand/60">
                   <tr>
-                    {['Days', 'Duty', 'Time', 'Location', 'Max', 'Status', ''].map(h => (
-                      <th key={h} className="text-left text-[11px] font-semibold text-ink/50 uppercase tracking-wider px-4 py-3">{h}</th>
+                    {[
+                      { label: 'Days',     width: 'w-44' },
+                      { label: 'Duty',     width: '' },
+                      { label: 'Time',     width: 'w-32' },
+                      { label: 'Location', width: 'w-36' },
+                      { label: 'Max',      width: 'w-16' },
+                      { label: 'Status',   width: 'w-24' },
+                      { label: '',         width: 'w-24' },
+                    ].map(h => (
+                      <th key={h.label} className={`text-left text-[11px] font-semibold text-ink/50 uppercase tracking-wider px-4 py-3 ${h.width}`}>{h.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -159,22 +169,7 @@ export default async function RecurringPage({
                               <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                             </svg>
                           </Link>
-                          <form action={deleteTemplate.bind(null, t.id)}>
-                            <button
-                              type="submit"
-                              title="Delete"
-                              aria-label={`Delete ${t.duty} template`}
-                              className="w-8 h-8 inline-flex items-center justify-center rounded-md text-ink/55 hover:text-red-600 hover:bg-red-50 transition-colors"
-                              onClick={e => { if (!confirm(`Delete "${t.duty}" template?`)) e.preventDefault() }}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                <path d="M10 11v6M14 11v6" />
-                              </svg>
-                            </button>
-                          </form>
+                          <DeleteTemplateButton id={t.id} duty={t.duty} />
                         </div>
                       </td>
                     </tr>
@@ -183,7 +178,7 @@ export default async function RecurringPage({
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   )

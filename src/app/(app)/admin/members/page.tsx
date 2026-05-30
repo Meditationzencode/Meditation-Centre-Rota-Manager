@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import MemberActions from './member-actions'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
 import { ROLE_STYLES, STATUS_STYLES } from '@/lib/badge-styles'
 
 export const metadata: Metadata = { title: 'Members' }
@@ -41,14 +42,20 @@ export default async function MembersPage() {
       />
 
       <div className="max-w-6xl mx-auto px-5">
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+        <Card clip>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-paper-100 border-b border-sand/60">
                 <tr>
-                  {['Name', 'Role', 'Status', 'Joined', ''].map(h => (
-                    <th key={h} className="text-left text-[11px] font-semibold text-ink/50 uppercase tracking-wider px-4 py-3">
-                      {h}
+                  {[
+                    { label: 'Name',   width: '' },
+                    { label: 'Role',   width: 'w-32' },
+                    { label: 'Status', width: 'w-28' },
+                    { label: 'Joined', width: 'w-32' },
+                    { label: '',       width: 'w-32' },
+                  ].map(h => (
+                    <th key={h.label} className={`text-left text-[11px] font-semibold text-ink/50 uppercase tracking-wider px-4 py-3 ${h.width}`}>
+                      {h.label}
                     </th>
                   ))}
                 </tr>
@@ -101,7 +108,7 @@ export default async function MembersPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )

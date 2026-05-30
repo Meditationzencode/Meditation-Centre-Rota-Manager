@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import SwapActions from './swap-actions'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
+import EmptyState from '@/components/ui/empty-state'
 
 export const metadata: Metadata = { title: 'Swap Requests' }
 
@@ -67,30 +69,33 @@ export default async function SwapsPage() {
               </span>
             )}
           </h2>
-          <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
-            {pending.length === 0 ? (
-              <p className="px-5 py-8 text-center text-ink/40 text-sm">No pending swap requests.</p>
-            ) : (
+          {pending.length === 0 ? (
+            <EmptyState
+              title="No pending requests"
+              body="Volunteer swap requests will appear here for you to review."
+            />
+          ) : (
+            <Card clip>
               <ul className="divide-y divide-sand/40">
                 {pending.map(swap => (
                   <SwapRow key={swap.id} swap={swap} showActions />
                 ))}
               </ul>
-            )}
-          </div>
+            </Card>
+          )}
         </section>
 
         {/* Resolved */}
         {resolved.length > 0 && (
           <section>
             <h2 className="font-serif text-xl font-medium mb-3 text-ink">Recent Decisions</h2>
-            <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+            <Card clip>
               <ul className="divide-y divide-sand/40">
                 {resolved.map(swap => (
                   <SwapRow key={swap.id} swap={swap} showActions={false} />
                 ))}
               </ul>
-            </div>
+            </Card>
           </section>
         )}
       </div>

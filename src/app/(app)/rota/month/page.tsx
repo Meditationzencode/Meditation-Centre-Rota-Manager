@@ -178,7 +178,7 @@ export default async function MonthRotaPage({
                                 href={weekLink}
                                 className={`block text-[10px] px-1.5 py-0.5 rounded truncate leading-tight hover:opacity-80 transition-opacity ${
                                   mine   ? 'bg-sage-100 text-sage-800' :
-                                  filled ? 'bg-red-50 text-red-600' :
+                                  filled ? 'bg-sage-200 text-sage-900' :
                                            dutyPill(slot.duty)
                                 }`}
                               >
@@ -210,7 +210,7 @@ export default async function MonthRotaPage({
             <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> My slot
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" /> Full
+            <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> Fully covered
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-gold-400 inline-block" /> Morning

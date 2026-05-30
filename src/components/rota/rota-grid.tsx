@@ -131,7 +131,7 @@ function SlotCard({
     : slot.mySignup
     ? 'border-sage-400 bg-sage-50'
     : slot.spotsLeft <= 0
-    ? 'border-red-200 bg-red-50/40'
+    ? 'border-sage-200 bg-sage-50/60'
     : slot.spotsLeft === 1
     ? 'border-gold-200 bg-gold-50/50'
     : 'border-sand/70 bg-paper-50'
@@ -145,7 +145,7 @@ function SlotCard({
         <span className="text-ink/45 font-medium">{fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}</span>
         <span className={`font-semibold px-1 py-0.5 rounded text-[10px] ${
           slot.spotsLeft <= 0
-            ? 'bg-red-100 text-red-600'
+            ? 'bg-sage-200 text-sage-900'
             : slot.spotsLeft === 1
             ? 'bg-gold-100 text-gold-700'
             : 'bg-sage-100 text-sage-700'
@@ -218,9 +218,14 @@ function SlotCard({
                 <button
                   type="submit"
                   disabled={signupPending}
-                  className="text-[10px] font-medium px-1.5 py-0.5 border border-sage-300 text-sage-800 bg-white rounded hover:bg-sage-600 hover:text-white hover:border-sage-600 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 border border-sage-300 text-sage-800 bg-sage-50 rounded hover:bg-sage-600 hover:text-white hover:border-sage-600 disabled:opacity-50 transition-colors"
                 >
-                  {signupPending ? '…' : 'Sign up'}
+                  {signupPending ? '…' : (
+                    <>
+                      <span className="text-sage-700 group-hover:text-white -ml-0.5">+</span>
+                      Sign up
+                    </>
+                  )}
                 </button>
               </form>
               {hasOtherSignupOnDay && (

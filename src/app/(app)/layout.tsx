@@ -14,8 +14,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#main" className="skip-link">Skip to main content</a>
       <Nav profile={profile} />
-      <main className="flex-1 pb-12">
+      <main id="main" className="flex-1 pb-12">
         {children}
       </main>
       <footer className="border-t border-sand/70 bg-paper-50 py-4 text-center text-xs text-ink/45 space-y-1">

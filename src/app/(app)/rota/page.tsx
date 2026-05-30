@@ -95,12 +95,14 @@ export default async function RotaPage({
             <PrintButton />
             <Link
               href="/api/rota/export"
-              className="text-sm font-medium text-ink/65 hover:text-ink border border-sand rounded-md px-3 py-1.5 hover:bg-paper-100 transition-colors flex items-center gap-1.5"
+              title="Export calendar"
+              aria-label="Export calendar (.ics)"
+              className="hidden sm:flex text-sm font-medium text-ink/65 hover:text-ink border border-sand rounded-md px-3 py-1.5 hover:bg-paper-100 transition-colors items-center gap-1.5"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              <span className="hidden sm:inline">Export .ics</span>
+              <span className="hidden md:inline">Export .ics</span>
             </Link>
             {isManager && (
               <Link
@@ -158,7 +160,7 @@ export default async function RotaPage({
             <span className="w-2.5 h-2.5 rounded-full bg-gold-500 inline-block" /> 1 spot left
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" /> Full
+            <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> Fully covered
           </span>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { fmtDate, fmtDateLong, fmtTime } from '@/lib/utils'
 import SlotActions from './slot-actions'
+import Card from '@/components/ui/card'
 
 export const metadata: Metadata = { title: 'Shift Detail' }
 
@@ -67,7 +68,7 @@ export default async function SlotDetailPage({
 
       <div className="max-w-2xl mx-auto px-5 space-y-4">
         {/* Slot info */}
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-5">
+        <Card className="p-5">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wider text-ink/45 mb-1">Date</dt>
@@ -84,7 +85,7 @@ export default async function SlotDetailPage({
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wider text-ink/45 mb-1">Capacity</dt>
               <dd className="text-ink">
-                <span className={`font-medium ${spotsLeft <= 0 ? 'text-red-600' : spotsLeft === 1 ? 'text-gold-700' : 'text-sage-700'}`}>
+                <span className={`font-medium ${spotsLeft <= 0 ? 'text-sage-800' : spotsLeft === 1 ? 'text-gold-700' : 'text-sage-700'}`}>
                   {signups?.length ?? 0}
                 </span>
                 {' '}/ {slot.max_volunteers} filled
@@ -103,10 +104,10 @@ export default async function SlotDetailPage({
               </div>
             )}
           </dl>
-        </div>
+        </Card>
 
         {/* Signed-up volunteers */}
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+        <Card clip>
           <div className="px-5 py-3 border-b border-sand/60 flex items-center justify-between">
             <h2 className="font-serif text-base font-medium text-ink">Signed up</h2>
             <span className="text-xs text-ink/45">{signups?.length ?? 0} of {slot.max_volunteers}</span>
@@ -125,7 +126,7 @@ export default async function SlotDetailPage({
               ))}
             </ul>
           )}
-        </div>
+        </Card>
 
         {/* Actions */}
         <SlotActions

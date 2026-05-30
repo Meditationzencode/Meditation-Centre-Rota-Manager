@@ -4,6 +4,7 @@ import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import ProfileForm from './profile-form'
 import UnavailabilityForm from './unavailability-form'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
 import { ROLE_STYLES } from '@/lib/badge-styles'
 
 export const metadata: Metadata = { title: 'My Profile' }
@@ -45,7 +46,7 @@ export default async function ProfilePage() {
 
       <div className="max-w-2xl mx-auto px-5 space-y-5">
         {/* Profile card */}
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-5 flex items-center gap-4">
+        <Card className="p-5 flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-sage-100 text-sage-800 flex items-center justify-center text-2xl font-semibold font-serif flex-shrink-0">
             {profile.name.charAt(0)}
           </div>
@@ -59,7 +60,7 @@ export default async function ProfilePage() {
               <p className="text-sm text-ink/45">{profile.phone_number}</p>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Edit form */}
         <ProfileForm name={profile.name} phone={profile.phone_number} />
@@ -70,7 +71,7 @@ export default async function ProfilePage() {
         )}
 
         {/* Upcoming sign-ups */}
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+        <Card clip>
           <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
             <h2 className="font-serif text-lg font-medium text-ink">My Sign-ups</h2>
             <a
@@ -103,7 +104,7 @@ export default async function ProfilePage() {
               })}
             </ul>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   )

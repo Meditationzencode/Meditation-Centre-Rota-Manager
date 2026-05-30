@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
 import DeleteSlotButton from './delete-slot-button'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
 import { COUNT_PILL } from '@/lib/badge-styles'
 
 export const metadata: Metadata = { title: 'Manage Schedule' }
@@ -60,14 +61,22 @@ export default async function SchedulePage() {
       />
 
       <div className="max-w-6xl mx-auto px-5">
-        <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+        <Card clip>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-paper-100 border-b border-sand/60">
                 <tr>
-                  {['Date', 'Time', 'Duty', 'Location', 'Sign-ups', 'Volunteers', ''].map(h => (
-                    <th key={h} className="text-left text-[11px] font-semibold text-ink/50 uppercase tracking-wider px-4 py-3">
-                      {h}
+                  {[
+                    { label: 'Date',       width: 'w-28' },
+                    { label: 'Time',       width: 'w-32' },
+                    { label: 'Duty',       width: '' },
+                    { label: 'Location',   width: 'w-36' },
+                    { label: 'Sign-ups',   width: 'w-24' },
+                    { label: 'Volunteers', width: '' },
+                    { label: '',           width: 'w-24' },
+                  ].map(h => (
+                    <th key={h.label} className={`text-left text-[11px] font-semibold text-ink/50 uppercase tracking-wider px-4 py-3 ${h.width}`}>
+                      {h.label}
                     </th>
                   ))}
                 </tr>
@@ -143,7 +152,7 @@ export default async function SchedulePage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )

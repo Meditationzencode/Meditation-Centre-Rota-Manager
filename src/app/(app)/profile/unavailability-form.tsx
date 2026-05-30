@@ -3,6 +3,7 @@
 import { useActionState, useTransition } from 'react'
 import { addUnavailability, removeUnavailability } from '@/lib/actions'
 import type { Unavailability } from '@/lib/types'
+import Card from '@/components/ui/card'
 
 const initial = null
 
@@ -18,7 +19,7 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
   }
 
   return (
-    <div className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+    <Card clip>
       <div className="px-5 py-4 border-b border-sand/50">
         <h2 className="font-serif text-lg font-medium text-ink">Unavailability</h2>
         <p className="text-sm text-ink/55 mt-0.5">Mark dates you cannot volunteer — coordinators will see this when scheduling.</p>
@@ -86,6 +87,6 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   )
 }

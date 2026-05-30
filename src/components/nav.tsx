@@ -48,7 +48,6 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
         <Link href="/dashboard" className="flex items-center gap-2.5 flex-shrink-0 group">
           <BrandMark size={26} />
           <span className="font-serif text-lg font-semibold text-ink">Bodhi Grove</span>
-          <span className="text-[10px] text-ink/45 uppercase tracking-[0.18em] hidden sm:block">Meditation Centre</span>
         </Link>
 
         {/* Desktop nav */}
@@ -59,6 +58,7 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={active ? 'page' : undefined}
                 className={`relative flex items-center px-3.5 text-sm font-medium transition-colors ${
                   active
                     ? 'text-sage-800 bg-sage-100/60'
@@ -135,6 +135,7 @@ export default function Nav({ profile }: { profile: Pick<Profile, 'id' | 'name' 
               key={link.href}
               href={link.href}
               onClick={() => setMobileOpen(false)}
+              aria-current={isActive(link.href) ? 'page' : undefined}
               className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive(link.href)
                   ? 'bg-sage-100/70 text-sage-800'

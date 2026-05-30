@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { signUpForSlot, cancelSignup, requestSwap } from '@/lib/actions'
 import type { ActionResult } from '@/lib/types'
+import Card from '@/components/ui/card'
 
 interface Props {
   slotId:      string
@@ -30,8 +31,8 @@ export default function SlotActions({
   if (!hasActions) return null
 
   return (
-    <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-5 space-y-4">
-      <h2 className="font-serif text-base font-medium">Actions</h2>
+    <Card className="p-5 space-y-4">
+      <h2 className="font-serif text-base font-medium text-ink">Actions</h2>
 
       <div className="flex flex-wrap gap-2">
         {canSignUp && (
@@ -43,7 +44,7 @@ export default function SlotActions({
                 <button
                   type="submit"
                   disabled={cancelPending}
-                  className="text-sm font-medium px-4 py-2 bg-amber-100 text-amber-700 border border-amber-300 rounded-md hover:bg-amber-200 disabled:opacity-50 transition-colors"
+                  className="text-sm font-medium px-4 py-2 bg-gold-100 text-gold-700 border border-gold-200 rounded-md hover:bg-gold-200 disabled:opacity-50 transition-colors"
                 >
                   {cancelPending ? 'Cancelling…' : 'Cancel sign-up'}
                 </button>
@@ -52,13 +53,13 @@ export default function SlotActions({
               {!swapPending && !swapSubmitted && !showSwapForm && (
                 <button
                   onClick={() => setShowSwapForm(true)}
-                  className="text-sm font-medium px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                  className="text-sm font-medium px-4 py-2 bg-mist/20 text-sage-800 border border-mist/40 rounded-md hover:bg-mist/30 transition-colors"
                 >
                   Request swap
                 </button>
               )}
               {(swapPending || swapSubmitted) && (
-                <span className="text-sm text-stone-400 italic self-center">Swap request pending</span>
+                <span className="text-sm text-ink/45 italic self-center">Swap request pending</span>
               )}
             </>
           ) : spotsLeft > 0 ? (
@@ -68,20 +69,25 @@ export default function SlotActions({
               <button
                 type="submit"
                 disabled={signupPending}
-                className="text-sm font-medium px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 bg-sage-600 text-white rounded-md hover:bg-sage-700 disabled:opacity-50 transition-colors shadow-sm"
               >
-                {signupPending ? 'Signing up…' : 'Sign up for this shift'}
+                {signupPending ? 'Signing up…' : (
+                  <>
+                    <span className="text-base leading-none -mt-px">+</span>
+                    Sign up for this shift
+                  </>
+                )}
               </button>
             </form>
           ) : (
-            <span className="text-sm text-stone-400 italic self-center">This slot is full.</span>
+            <span className="text-sm text-ink/45 italic self-center">This slot is fully covered.</span>
           )
         )}
 
         {isManager && (
           <Link
             href={`/admin/schedule/${slotId}/edit`}
-            className="text-sm font-medium px-4 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-md hover:bg-teal-100 transition-colors"
+            className="text-sm font-medium px-4 py-2 bg-sage-50 text-sage-800 border border-sage-200 rounded-md hover:bg-sage-100 transition-colors"
           >
             Edit shift
           </Link>
@@ -92,13 +98,13 @@ export default function SlotActions({
         <form action={swapAction} className="space-y-3" onSubmit={() => setShowSwapForm(false)}>
           <input type="hidden" name="slotId" value={slotId} />
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              Reason for swap <span className="text-stone-400 font-normal">(optional)</span>
+            <label className="block text-sm font-medium text-ink/80 mb-1">
+              Reason for swap <span className="text-ink/45 font-normal">(optional)</span>
             </label>
             <textarea
               name="reason"
               rows={3}
-              className="w-full text-sm border border-stone-300 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-sage-500"
+              className="w-full text-sm border border-sand rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-mist"
               placeholder="Let the coordinator know why you need a swap."
             />
           </div>
@@ -106,14 +112,14 @@ export default function SlotActions({
             <button
               type="submit"
               disabled={swapPending2}
-              className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="text-sm font-medium px-4 py-2 bg-sage-600 text-white rounded-md hover:bg-sage-700 disabled:opacity-50 transition-colors"
             >
               {swapPending2 ? 'Submitting…' : 'Submit request'}
             </button>
             <button
               type="button"
               onClick={() => setShowSwapForm(false)}
-              className="text-sm font-medium px-4 py-2 bg-stone-100 text-stone-600 border border-stone-300 rounded-md hover:bg-stone-200 transition-colors"
+              className="text-sm font-medium px-4 py-2 bg-paper-100 text-ink/65 border border-sand rounded-md hover:bg-paper-200 transition-colors"
             >
               Cancel
             </button>
@@ -130,6 +136,6 @@ export default function SlotActions({
       {swapState && 'error' in swapState && (
         <p className="text-sm text-red-600">{swapState.error}</p>
       )}
-    </div>
+    </Card>
   )
 }

@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
+import EmptyState from '@/components/ui/empty-state'
 
 export const metadata: Metadata = { title: 'Member Availability' }
 
@@ -53,11 +55,12 @@ export default async function AdminAvailabilityPage() {
 
       <div className="max-w-4xl mx-auto px-5 space-y-4 pb-12">
         {members.length === 0 ? (
-          <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-10 text-center text-ink/40 text-sm">
-            No unavailability dates have been submitted yet.
-          </div>
+          <EmptyState
+            title="No unavailability submitted"
+            body="When volunteers mark dates they can't cover, you'll see them here while you build the schedule."
+          />
         ) : members.map(([userId, { name, role, dates }]) => (
-          <div key={userId} className="bg-white border border-sand/70 rounded-xl shadow-sm overflow-hidden">
+          <Card key={userId} clip>
             <div className="flex items-center gap-3 px-5 py-4 border-b border-sand/50 bg-paper-100">
               <div className="w-8 h-8 rounded-full bg-sage-100 text-sage-800 flex items-center justify-center text-sm font-semibold flex-shrink-0">
                 {name.charAt(0)}
@@ -82,7 +85,7 @@ export default async function AdminAvailabilityPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

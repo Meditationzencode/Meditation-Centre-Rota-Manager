@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { createClient, getProfileForUser } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
 import PageHeader from '@/components/ui/page-header'
+import Card from '@/components/ui/card'
+import EmptyState from '@/components/ui/empty-state'
 import {
   UsersIcon, HandshakeIcon, SwapIcon, ClipboardIcon,
   PlusIcon, CalendarIcon, UserPlusIcon,
@@ -79,7 +81,7 @@ export default async function DashboardPage() {
 
         {/* Viewer: read-only rota summary */}
         {isViewer && (
-          <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-6 text-center space-y-3">
+          <Card className="p-6 text-center space-y-3">
             <p className="text-ink/60 text-sm">
               You have viewer access. You can browse the rota but cannot sign up for slots.
             </p>
@@ -89,7 +91,7 @@ export default async function DashboardPage() {
             >
               View this week&apos;s rota →
             </Link>
-          </div>
+          </Card>
         )}
 
         {/* Stats row — managers only */}
@@ -126,50 +128,55 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Two-column section — not shown to viewers */}
+        {/* Two-column section — not shown to viewers. items-start so an empty
+            card on either side doesn't stretch to match its sibling's height. */}
         {!isViewer && (
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-2 gap-6 lg:items-start">
             {/* My upcoming duties */}
-            <section className="bg-white border border-sand/70 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
-                <h2 className="font-serif text-lg font-medium text-ink">My Upcoming Duties</h2>
-                <Link href="/rota" className="text-xs text-sage-700 hover:underline">View rota →</Link>
-              </div>
-              {myUpcoming.length === 0 ? (
-                <div className="px-5 py-8 text-center text-ink/45 text-sm space-y-3">
-                  <p>No upcoming duties.</p>
-                  <Link href="/rota" className="inline-block text-xs border border-sand rounded-md px-3 py-1.5 hover:bg-paper-100">
+            {myUpcoming.length === 0 ? (
+              <EmptyState
+                title="You're all caught up"
+                body="No duties on your schedule yet. Browse open slots if you'd like to pick one up."
+                cta={
+                  <Link
+                    href="/rota"
+                    className="inline-block text-sm font-medium border border-sage-300 text-sage-800 bg-sage-50 hover:bg-sage-600 hover:text-white hover:border-sage-600 rounded-md px-4 py-2 transition-colors"
+                  >
                     Browse open slots
                   </Link>
+                }
+              />
+            ) : (
+              <Card clip>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
+                  <h2 className="font-serif text-lg font-medium text-ink">My Upcoming Duties</h2>
+                  <Link href="/rota" className="text-xs text-sage-700 hover:underline">View rota →</Link>
                 </div>
-              ) : (
-                <>
-                  <ul className="divide-y divide-sand/40">
-                    {myUpcoming.map(s => (
-                      <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                        <span className="text-xs font-semibold text-sage-700 uppercase tracking-wide w-16 flex-shrink-0">
-                          {fmtDate(s.date)}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate text-ink">{s.duty}</p>
-                          <p className="text-xs text-ink/45">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  {myUpcomingMore > 0 && (
-                    <div className="px-5 py-3 border-t border-sand/40">
-                      <Link href="/rota" className="text-xs text-sage-700 hover:underline">
-                        and {myUpcomingMore} more → View rota
-                      </Link>
-                    </div>
-                  )}
-                </>
-              )}
-            </section>
+                <ul className="divide-y divide-sand/40">
+                  {myUpcoming.map(s => (
+                    <li key={s.id} className="flex items-center gap-3 px-5 py-3">
+                      <span className="text-xs font-semibold text-sage-700 uppercase tracking-wide w-16 flex-shrink-0">
+                        {fmtDate(s.date)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate text-ink">{s.duty}</p>
+                        <p className="text-xs text-ink/45">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {myUpcomingMore > 0 && (
+                  <div className="px-5 py-3 border-t border-sand/40">
+                    <Link href="/rota" className="text-xs text-sage-700 hover:underline">
+                      and {myUpcomingMore} more → View rota
+                    </Link>
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* Open slots */}
-            <section className="bg-white border border-sand/70 rounded-xl shadow-sm">
+            <Card clip>
               <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
                 <h2 className="font-serif text-lg font-medium text-ink">Open Slots — Next 7 Days</h2>
                 <Link href="/rota" className="text-xs text-sage-700 hover:underline">Sign up →</Link>
@@ -198,7 +205,7 @@ export default async function DashboardPage() {
                   ))}
                 </ul>
               )}
-            </section>
+            </Card>
           </div>
         )}
 
@@ -217,12 +224,13 @@ export default async function DashboardPage() {
               ].map(a => (
                 <Link
                   key={a.href} href={a.href}
-                  className="bg-white border border-sand/70 rounded-xl p-5 flex flex-col items-center gap-2.5 text-center shadow-sm hover:shadow hover:border-mist/70 transition-all group"
+                  className="relative bg-white border border-sand/70 rounded-xl px-5 py-4 flex items-center gap-3.5 shadow-sm hover:shadow hover:border-mist/70 transition-all group"
                 >
-                  <span className="text-ink/45 group-hover:text-sage-700 transition-colors">
+                  <span className="w-10 h-10 rounded-lg bg-sage-50 text-sage-700 flex items-center justify-center flex-shrink-0 group-hover:bg-sage-100 transition-colors">
                     <a.Icon size={22} />
                   </span>
-                  <span className="text-xs font-medium text-ink/65 group-hover:text-ink">{a.label}</span>
+                  <span className="text-sm font-medium text-ink/85 group-hover:text-ink leading-tight flex-1">{a.label}</span>
+                  <span className="text-ink/30 group-hover:text-sage-700 group-hover:translate-x-0.5 transition-all">→</span>
                 </Link>
               ))}
             </div>
