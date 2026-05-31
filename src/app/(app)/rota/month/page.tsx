@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient, getProfileForUser } from '@/lib/supabase/server'
+import { createClient, getMyProfile } from '@/lib/supabase/server'
 import {
   getMonthStart, addMonths, addDays,
   getWeekStart, fmtMonthYear, fmtTime,
@@ -24,7 +24,7 @@ export default async function MonthRotaPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const profile = await getProfileForUser<{ id: string; role: string }>(user.id, 'id, role')
+  const profile = await getMyProfile<{ id: string; role: string }>(user.id, 'id, role')
   if (!profile) redirect('/auth-error?reason=missing_profile')
 
   const monthStart = rawMonth && /^\d{4}-\d{2}-\d{2}$/.test(rawMonth)

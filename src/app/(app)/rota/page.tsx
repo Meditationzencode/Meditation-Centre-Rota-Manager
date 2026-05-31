@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient, getProfileForUser } from '@/lib/supabase/server'
+import { createClient, getMyProfile } from '@/lib/supabase/server'
 import { getWeekStart, addDays, fmtDate, fmtDateLong } from '@/lib/utils'
 import RotaGrid from '@/components/rota/rota-grid'
 import PrintButton from '@/components/rota/print-button'
@@ -28,7 +28,7 @@ export default async function RotaPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const profile = await getProfileForUser<{ id: string; role: string }>(user.id, 'id, role')
+  const profile = await getMyProfile<{ id: string; role: string }>(user.id, 'id, role')
 
   if (!profile) redirect('/auth-error?reason=missing_profile')
 

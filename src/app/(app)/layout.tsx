@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient, getProfileForUser } from '@/lib/supabase/server'
+import { createClient, getMyProfile } from '@/lib/supabase/server'
 import Nav from '@/components/nav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!user) redirect('/login')
 
-  const profile = await getProfileForUser(user.id)
+  const profile = await getMyProfile(user.id)
 
   if (!profile) redirect('/auth-error?reason=missing_profile')
 

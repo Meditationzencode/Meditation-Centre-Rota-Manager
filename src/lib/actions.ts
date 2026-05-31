@@ -5,9 +5,13 @@ import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getWeekStart, addDays } from '@/lib/utils'
 import { sendSignupConfirmation, sendSignupCancelled, sendSwapRequestedToAdmins, sendSwapDecision } from '@/lib/email'
+import { requireUser, requireRole } from '@/lib/auth'
+import { translatePostgresError } from '@/lib/errors'
+import { log } from '@/lib/log'
+import { SITE_URL } from '@/lib/env'
 import type { ActionResult, Role } from '@/lib/types'
 
-// ── Audit helper ──────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function audit(
   userId: string,
@@ -19,9 +23,34 @@ async function audit(
   try {
     const admin = createAdminClient()
     await admin.from('audit_log').insert({ user_id: userId, action, entity_type: entityType, entity_id: entityId, detail })
-  } catch {
-    // Non-fatal — never let audit logging break a user action
+  } catch (err) {
+    // Audit failures must never break the user-facing action — but we do
+    // want to know about them, since a silent gap defeats the audit story.
+    log.error({ action: 'audit', userId, message: 'failed to insert audit entry', err })
   }
+}
+
+/**
+ * Fetch every auth.users page so we don't silently miss admins beyond the
+ * default first-page cutoff (50 users). Used to gather admin emails for
+ * swap-request notifications.
+ */
+async function fetchAllAuthUsers() {
+  const admin = createAdminClient()
+  const perPage = 200
+  const all: { id: string; email?: string }[] = []
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage })
+    if (error) {
+      log.error({ action: 'fetchAllAuthUsers', message: 'listUsers failed', err: error })
+      break
+    }
+    const users = data.users
+    if (!users || users.length === 0) break
+    all.push(...users.map(u => ({ id: u.id, email: u.email ?? undefined })))
+    if (users.length < perPage) break
+  }
+  return all
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -45,25 +74,20 @@ export async function logout() {
 // ── Profile ───────────────────────────────────────────────────────────────────
 
 export async function updateProfile(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const name = (formData.get('name') as string).trim()
+  const name = ((formData.get('name') as string) ?? '').trim()
   if (!name) return { error: 'Name cannot be empty.' }
 
-  const phone_number = (formData.get('phone') as string ?? '').trim()
+  const phone_number = ((formData.get('phone') as string) ?? '').trim()
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ name, phone_number })
-    .eq('id', user.id)
+  const { error } = await supabase.from('profiles').update({ name, phone_number }).eq('id', user.id)
+  if (error) return { error: translatePostgresError(error, { action: 'updateProfile', userId: user.id }) }
 
-  if (error) return { error: error.message }
-
-  const newPassword = (formData.get('password') as string).trim()
+  const newPassword = ((formData.get('password') as string) ?? '').trim()
   if (newPassword) {
-    const confirm = (formData.get('confirmPassword') as string).trim()
+    const confirm = ((formData.get('confirmPassword') as string) ?? '').trim()
     if (newPassword !== confirm) return { error: 'Passwords do not match.' }
     const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword })
     if (pwErr) return { error: pwErr.message }
@@ -76,22 +100,17 @@ export async function updateProfile(_prev: ActionResult | null, formData: FormDa
 // ── Unavailability ────────────────────────────────────────────────────────────
 
 export async function addUnavailability(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const date = (formData.get('date') as string).trim()
-  const note = (formData.get('note') as string ?? '').trim()
-
+  const date = ((formData.get('date') as string) ?? '').trim()
+  const note = ((formData.get('note') as string) ?? '').trim()
   if (!date) return { error: 'Please select a date.' }
 
-  const { error } = await supabase
-    .from('unavailability')
-    .insert({ user_id: user.id, date, note })
-
+  const { error } = await supabase.from('unavailability').insert({ user_id: user.id, date, note })
   if (error) {
     if (error.code === '23505') return { error: 'You have already marked that date as unavailable.' }
-    return { error: error.message }
+    return { error: translatePostgresError(error, { action: 'addUnavailability', userId: user.id }) }
   }
 
   revalidatePath('/profile')
@@ -99,17 +118,11 @@ export async function addUnavailability(_prev: ActionResult | null, formData: Fo
 }
 
 export async function removeUnavailability(id: string): Promise<ActionResult> {
+  const user = await requireUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const { error } = await supabase
-    .from('unavailability')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id)
-
-  if (error) return { error: error.message }
+  const { error } = await supabase.from('unavailability').delete().eq('id', id).eq('user_id', user.id)
+  if (error) return { error: translatePostgresError(error, { action: 'removeUnavailability', userId: user.id }) }
 
   revalidatePath('/profile')
   return { success: true }
@@ -118,68 +131,56 @@ export async function removeUnavailability(id: string): Promise<ActionResult> {
 // ── Rota sign-up / cancel ─────────────────────────────────────────────────────
 
 export async function signUpForSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const slotId = formData.get('slotId') as string
+  if (!slotId) return { error: 'Missing slot.' }
 
   const { data: slot } = await supabase
     .from('slots')
     .select('max_volunteers, duty, date, start_time, end_time, location')
     .eq('id', slotId)
     .single()
+  if (!slot) return { error: 'Slot not found.' }
 
+  // Friendly pre-check — the database trigger is the actual source of truth.
   const { count } = await supabase
     .from('signups')
     .select('*', { count: 'exact', head: true })
     .eq('slot_id', slotId)
-
-  if (!slot) return { error: 'Slot not found.' }
   if ((count ?? 0) >= slot.max_volunteers) return { error: 'This slot is already full.' }
 
-  const { error } = await supabase
-    .from('signups')
-    .insert({ slot_id: slotId, user_id: user.id })
-
+  const { error } = await supabase.from('signups').insert({ slot_id: slotId, user_id: user.id })
   if (error) {
     if (error.code === '23505') return { error: 'You are already signed up for this slot.' }
-    return { error: error.message }
+    return { error: translatePostgresError(error, { action: 'signUpForSlot', userId: user.id }) }
   }
 
   await audit(user.id, 'signup.add', 'signup', slotId, `Signed up for ${slot.duty} on ${slot.date}`)
   if (user.email) {
     const time = `${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
-    sendSignupConfirmation(user.email, slot.duty, slot.date, time, slot.location)
+    await sendSignupConfirmation(user.email, slot.duty, slot.date, time, slot.location)
   }
   revalidatePath('/rota')
   return { success: true }
 }
 
 export async function cancelSignup(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const slotId = formData.get('slotId') as string
+  if (!slotId) return { error: 'Missing slot.' }
 
-  const { data: slot } = await supabase
-    .from('slots')
-    .select('duty, date')
-    .eq('id', slotId)
-    .single()
+  const { data: slot } = await supabase.from('slots').select('duty, date').eq('id', slotId).single()
 
-  const { error } = await supabase
-    .from('signups')
-    .delete()
-    .eq('slot_id', slotId)
-    .eq('user_id', user.id)
-
-  if (error) return { error: error.message }
+  const { error } = await supabase.from('signups').delete().eq('slot_id', slotId).eq('user_id', user.id)
+  if (error) return { error: translatePostgresError(error, { action: 'cancelSignup', userId: user.id }) }
 
   if (slot) {
     await audit(user.id, 'signup.cancel', 'signup', slotId, `Cancelled signup for ${slot.duty} on ${slot.date}`)
-    if (user.email) sendSignupCancelled(user.email, slot.duty, slot.date)
+    if (user.email) await sendSignupCancelled(user.email, slot.duty, slot.date)
   }
   revalidatePath('/rota')
   return { success: true }
@@ -188,41 +189,41 @@ export async function cancelSignup(_prev: ActionResult | null, formData: FormDat
 // ── Shift swaps ───────────────────────────────────────────────────────────────
 
 export async function requestSwap(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const user = await requireUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const slotId = formData.get('slotId') as string
-  const reason = (formData.get('reason') as string ?? '').trim()
+  const reason = ((formData.get('reason') as string) ?? '').trim()
+  if (!slotId) return { error: 'Missing slot.' }
 
   const { data: signup } = await supabase
     .from('signups').select('id').eq('slot_id', slotId).eq('user_id', user.id).single()
   if (!signup) return { error: 'You are not signed up for this slot.' }
 
-  const { data: slot } = await supabase
-    .from('slots').select('duty, date').eq('id', slotId).single()
+  const { data: slot } = await supabase.from('slots').select('duty, date').eq('id', slotId).single()
 
-  const { error } = await supabase
-    .from('shift_swaps').insert({ requester_id: user.id, slot_id: slotId, reason })
-
+  const { error } = await supabase.from('shift_swaps').insert({ requester_id: user.id, slot_id: slotId, reason })
   if (error) {
     if (error.code === '23505') return { error: 'You already have a pending swap request for this slot.' }
-    return { error: error.message }
+    return { error: translatePostgresError(error, { action: 'requestSwap', userId: user.id }) }
   }
 
   await audit(user.id, 'swap.request', 'shift_swap', slotId, `Requested swap for slot ${slotId}`)
 
-  // Email all admins
-  const { data: adminProfiles } = await supabase.from('profiles').select('id').eq('role', 'admin')
-  if (adminProfiles && adminProfiles.length > 0 && slot) {
-    const adminClient = createAdminClient()
-    const { data: adminUsers } = await adminClient.auth.admin.listUsers()
-    const adminIds = new Set(adminProfiles.map(p => p.id))
-    const adminEmails = (adminUsers?.users ?? [])
-      .filter((u: { id: string; email?: string }) => adminIds.has(u.id) && u.email)
-      .map((u: { email?: string }) => u.email!)
-    const requesterName = (await supabase.from('profiles').select('name').eq('id', user.id).single()).data?.name ?? 'A volunteer'
-    sendSwapRequestedToAdmins(adminEmails, requesterName, slot.duty, slot.date, reason)
+  // Notify admins. Paginates through auth.users so we never silently miss
+  // an admin beyond the default first-page cutoff.
+  if (slot) {
+    const { data: adminProfiles } = await supabase.from('profiles').select('id').eq('role', 'admin')
+    if (adminProfiles && adminProfiles.length > 0) {
+      const adminIds = new Set(adminProfiles.map(p => p.id))
+      const allUsers = await fetchAllAuthUsers()
+      const adminEmails = allUsers
+        .filter(u => adminIds.has(u.id) && u.email)
+        .map(u => u.email!)
+      const requesterName =
+        (await supabase.from('profiles').select('name').eq('id', user.id).single()).data?.name ?? 'A volunteer'
+      await sendSwapRequestedToAdmins(adminEmails, requesterName, slot.duty, slot.date, reason)
+    }
   }
 
   revalidatePath('/rota')
@@ -230,16 +231,16 @@ export async function requestSwap(_prev: ActionResult | null, formData: FormData
 }
 
 export async function reviewSwap(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
+  const guard = await requireRole(['admin'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const swapId     = formData.get('swapId')     as string
   const decision   = formData.get('decision')   as 'approved' | 'rejected'
-  const adminNotes = (formData.get('adminNotes') as string ?? '').trim()
+  const adminNotes = ((formData.get('adminNotes') as string) ?? '').trim()
+  if (!swapId || (decision !== 'approved' && decision !== 'rejected')) {
+    return { error: 'Invalid swap decision.' }
+  }
 
   const adminClient = createAdminClient()
   const { data: swap } = await adminClient
@@ -247,30 +248,26 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
     .select('requester_id, slot_id, slot:slots(duty, date)')
     .eq('id', swapId)
     .single()
-
   if (!swap) return { error: 'Swap request not found.' }
 
   const { error } = await adminClient
     .from('shift_swaps')
     .update({ status: decision, reviewed_by: user.id, reviewed_at: new Date().toISOString(), admin_notes: adminNotes })
     .eq('id', swapId)
-
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'reviewSwap', userId: user.id }) }
 
   if (decision === 'approved') {
-    await adminClient.from('signups')
-      .delete().eq('slot_id', swap.slot_id).eq('user_id', swap.requester_id)
+    await adminClient.from('signups').delete().eq('slot_id', swap.slot_id).eq('user_id', swap.requester_id)
   }
 
-  const slot = swap.slot as { duty: string; date: string } | null
+  const slot = swap.slot as unknown as { duty: string; date: string } | null
   await audit(user.id, `swap.${decision}`, 'shift_swap', swapId,
     `${decision === 'approved' ? 'Approved' : 'Rejected'} swap for ${slot?.duty} on ${slot?.date}`)
 
-  // Email the requester
   if (slot) {
     const { data: requesterUser } = await adminClient.auth.admin.getUserById(swap.requester_id)
     if (requesterUser.user?.email) {
-      sendSwapDecision(requesterUser.user.email, decision === 'approved', slot.duty, slot.date)
+      await sendSwapDecision(requesterUser.user.email, decision === 'approved', slot.duty, slot.date)
     }
   }
 
@@ -292,15 +289,16 @@ function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
   const endTime   = formData.get('endTime')       as string
   const duty      = formData.get('duty')          as string
   const location  = formData.get('location')      as string
-  const maxVols   = parseInt(formData.get('maxVolunteers') as string, 10) || 1
-  const notes     = (formData.get('notes') as string).trim()
+  const maxVols   = parseInt(formData.get('maxVolunteers') as string, 10)
+  const notes     = ((formData.get('notes') as string) ?? '').trim()
   const status    = (formData.get('status') as string) === 'cancelled' ? 'cancelled' : 'open'
 
   if (!date || !startTime || !endTime || !duty || !location)
     return { error: 'All fields except notes are required.' }
-
   if (startTime >= endTime)
     return { error: 'Start time must be before end time.' }
+  if (!Number.isFinite(maxVols) || maxVols < 1 || maxVols > 20)
+    return { error: 'Max volunteers must be between 1 and 20.' }
 
   return {
     date,
@@ -316,15 +314,16 @@ function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
 }
 
 export async function createSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const payload = parseSlotForm(formData)
   if ('error' in payload) return payload
 
+  const supabase = await createClient()
   const { data, error } = await supabase.from('slots').insert({ ...payload, created_by: user.id }).select('id').single()
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'createSlot', userId: user.id }) }
 
   await audit(user.id, 'slot.create', 'slot', data?.id ?? null, `Created slot: ${payload.duty} on ${payload.date} at ${payload.location}`)
   revalidatePath('/rota')
@@ -333,16 +332,18 @@ export async function createSlot(_prev: ActionResult | null, formData: FormData)
 }
 
 export async function updateSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const id      = formData.get('id') as string
+  if (!id) return { error: 'Missing slot id.' }
   const payload = parseSlotForm(formData)
   if ('error' in payload) return payload
 
+  const supabase = await createClient()
   const { error } = await supabase.from('slots').update(payload).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'updateSlot', userId: user.id }) }
 
   await audit(user.id, 'slot.update', 'slot', id, `Updated slot: ${payload.duty} on ${payload.date}`)
   revalidatePath('/rota')
@@ -351,13 +352,14 @@ export async function updateSlot(_prev: ActionResult | null, formData: FormData)
 }
 
 export async function deleteSlot(slotId: string): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
+  const supabase = await createClient()
   const { data: slot } = await supabase.from('slots').select('duty, date').eq('id', slotId).single()
   const { error } = await supabase.from('slots').delete().eq('id', slotId)
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'deleteSlot', userId: user.id }) }
 
   if (slot) await audit(user.id, 'slot.delete', 'slot', slotId, `Deleted slot: ${slot.duty} on ${slot.date}`)
   revalidatePath('/rota')
@@ -368,20 +370,19 @@ export async function deleteSlot(slotId: string): Promise<ActionResult> {
 // ── Admin volunteer assignment ────────────────────────────────────────────────
 
 export async function adminAssignVolunteer(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!profile || !['admin', 'coordinator'].includes(profile.role)) return { error: 'Not authorised.' }
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const slotId  = formData.get('slotId')  as string
   const userId  = formData.get('userId')  as string
   if (!slotId || !userId) return { error: 'Missing slot or volunteer.' }
 
+  const supabase = await createClient()
   const { data: slot } = await supabase.from('slots').select('max_volunteers, duty, date').eq('id', slotId).single()
   if (!slot) return { error: 'Slot not found.' }
 
+  // Friendly pre-check — the capacity trigger is the source of truth.
   const { count } = await supabase.from('signups').select('*', { count: 'exact', head: true }).eq('slot_id', slotId)
   if ((count ?? 0) >= slot.max_volunteers) return { error: 'This slot is already full.' }
 
@@ -389,7 +390,7 @@ export async function adminAssignVolunteer(_prev: ActionResult | null, formData:
   const { error } = await admin.from('signups').insert({ slot_id: slotId, user_id: userId })
   if (error) {
     if (error.code === '23505') return { error: 'That volunteer is already signed up.' }
-    return { error: error.message }
+    return { error: translatePostgresError(error, { action: 'adminAssignVolunteer', userId: user.id }) }
   }
 
   await audit(user.id, 'admin.assign', 'signup', slotId, `Admin assigned volunteer to ${slot.duty} on ${slot.date}`)
@@ -399,22 +400,20 @@ export async function adminAssignVolunteer(_prev: ActionResult | null, formData:
 }
 
 export async function adminRemoveVolunteer(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!profile || !['admin', 'coordinator'].includes(profile.role)) return { error: 'Not authorised.' }
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const slotId = formData.get('slotId') as string
   const userId = formData.get('userId') as string
   if (!slotId || !userId) return { error: 'Missing slot or volunteer.' }
 
+  const supabase = await createClient()
   const { data: slot } = await supabase.from('slots').select('duty, date').eq('id', slotId).single()
 
   const admin = createAdminClient()
   const { error } = await admin.from('signups').delete().eq('slot_id', slotId).eq('user_id', userId)
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'adminRemoveVolunteer', userId: user.id }) }
 
   if (slot) await audit(user.id, 'admin.remove', 'signup', slotId, `Admin removed volunteer from ${slot.duty} on ${slot.date}`)
   revalidatePath(`/admin/schedule/${slotId}/edit`)
@@ -425,17 +424,14 @@ export async function adminRemoveVolunteer(_prev: ActionResult | null, formData:
 // ── Members (admin only) ──────────────────────────────────────────────────────
 
 export async function createMember(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user: caller } } = await supabase.auth.getUser()
-  if (!caller) redirect('/login')
-  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single()
-  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
+  const guard = await requireRole(['admin'])
+  if ('error' in guard) return guard
+  const { user: caller } = guard
 
-  const name     = (formData.get('name')     as string).trim()
-  const email    = (formData.get('email')    as string).trim()
+  const name     = ((formData.get('name')     as string) ?? '').trim()
+  const email    = ((formData.get('email')    as string) ?? '').trim()
   const role     = formData.get('role')      as Role
-  const password = (formData.get('password') as string).trim()
-
+  const password = ((formData.get('password') as string) ?? '').trim()
   if (!name || !email || !role || !password) return { error: 'All fields are required.' }
 
   const admin = createAdminClient()
@@ -445,9 +441,12 @@ export async function createMember(_prev: ActionResult | null, formData: FormDat
     email_confirm: true,
     user_metadata: { name, role },
   })
-
   if (error) return { error: error.message }
 
+  // The handle_new_user trigger inserts the profile row from user_metadata.
+  // Update afterwards to make absolutely sure name + role match the form,
+  // regardless of which side wrote first.
+  const supabase = await createClient()
   await supabase.from('profiles').update({ name, role }).eq('id', data.user.id)
 
   await audit(caller.id, 'member.create', 'member', data.user.id, `Created member: ${name} (${role})`)
@@ -456,27 +455,21 @@ export async function createMember(_prev: ActionResult | null, formData: FormDat
 }
 
 export async function updateMember(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const guard = await requireRole(['admin'])
+  if ('error' in guard) return guard
+  const { user } = guard
+
   const id     = formData.get('id')   as string
-  const name   = (formData.get('name')  as string).trim()
+  const name   = ((formData.get('name')  as string) ?? '').trim()
   const role   = formData.get('role')  as Role
   const active = formData.get('active') === 'true'
-
-  if (!name || !role) return { error: 'Name and role are required.' }
+  if (!id || !name || !role) return { error: 'Name and role are required.' }
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
+  const { error } = await supabase.from('profiles').update({ name, role, active }).eq('id', id)
+  if (error) return { error: translatePostgresError(error, { action: 'updateMember', userId: user.id }) }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ name, role, active })
-    .eq('id', id)
-
-  if (error) return { error: error.message }
-
-  const password = (formData.get('password') as string | null)?.trim()
+  const password = ((formData.get('password') as string | null) ?? '').trim()
   if (password) {
     const admin = createAdminClient()
     const { error: pwErr } = await admin.auth.admin.updateUserById(id, { password })
@@ -489,18 +482,13 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
 }
 
 export async function toggleMemberActive(memberId: string, active: boolean): Promise<ActionResult> {
+  const guard = await requireRole(['admin'])
+  if ('error' in guard) return guard
+  const { user } = guard
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ active: !active })
-    .eq('id', memberId)
-
-  if (error) return { error: error.message }
+  const { error } = await supabase.from('profiles').update({ active: !active }).eq('id', memberId)
+  if (error) return { error: translatePostgresError(error, { action: 'toggleMemberActive', userId: user.id }) }
 
   await audit(user.id, active ? 'member.deactivate' : 'member.activate', 'member', memberId, `${active ? 'Deactivated' : 'Activated'} member`)
   revalidatePath('/admin/members')
@@ -508,12 +496,11 @@ export async function toggleMemberActive(memberId: string, active: boolean): Pro
 }
 
 export async function deleteMember(memberId: string): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!callerProfile || callerProfile.role !== 'admin') return { error: 'Not authorised.' }
+  const guard = await requireRole(['admin'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
+  const supabase = await createClient()
   const { data: profile } = await supabase.from('profiles').select('name').eq('id', memberId).single()
   const admin = createAdminClient()
   const { error } = await admin.auth.admin.deleteUser(memberId)
@@ -527,23 +514,23 @@ export async function deleteMember(memberId: string): Promise<ActionResult> {
 // ── Password reset ─────────────────────────────────────────────────────────────
 
 export async function requestPasswordReset(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const email = (formData.get('email') as string).trim().toLowerCase()
+  const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
   if (!email) return { error: 'Email address is required.' }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? `https://${process.env.VERCEL_URL ?? 'localhost:3000'}`
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/api/auth/callback?type=recovery&next=/reset-password`,
+    redirectTo: `${SITE_URL}/api/auth/callback?type=recovery&next=/reset-password`,
   })
 
-  // Always return success to prevent email enumeration
-  if (error) console.error('Password reset request error:', error.message)
+  // Always return success to prevent email enumeration. Errors are logged
+  // server-side so failures are still observable.
+  if (error) log.warn({ action: 'requestPasswordReset', message: 'reset email failed', err: error })
   return { success: true }
 }
 
 export async function resetPassword(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const password = (formData.get('password') as string).trim()
-  const confirm  = (formData.get('confirmPassword') as string).trim()
+  const password = ((formData.get('password')        as string) ?? '').trim()
+  const confirm  = ((formData.get('confirmPassword') as string) ?? '').trim()
 
   if (!password) return { error: 'Password is required.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
@@ -558,16 +545,19 @@ export async function resetPassword(_prev: ActionResult | null, formData: FormDa
 
 // ── Recurring shift templates ──────────────────────────────────────────────────
 
+const MAX_GENERATE_RANGE_DAYS = 365
+
 export async function createTemplate(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const payload = parseTemplateForm(formData)
   if ('error' in payload) return payload
 
+  const supabase = await createClient()
   const { error } = await supabase.from('recurring_templates').insert(payload)
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'createTemplate', userId: user.id }) }
 
   await audit(user.id, 'template.create', 'recurring_template', null, `Created recurring template: ${payload.duty}`)
   revalidatePath('/admin/schedule/recurring')
@@ -575,16 +565,18 @@ export async function createTemplate(_prev: ActionResult | null, formData: FormD
 }
 
 export async function updateTemplate(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) return guard
+  const { user } = guard
 
   const id = formData.get('id') as string
+  if (!id) return { error: 'Missing template id.' }
   const payload = parseTemplateForm(formData)
   if ('error' in payload) return payload
 
+  const supabase = await createClient()
   const { error } = await supabase.from('recurring_templates').update(payload).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: translatePostgresError(error, { action: 'updateTemplate', userId: user.id }) }
 
   await audit(user.id, 'template.update', 'recurring_template', id, `Updated recurring template: ${payload.duty}`)
   revalidatePath('/admin/schedule/recurring')
@@ -592,12 +584,13 @@ export async function updateTemplate(_prev: ActionResult | null, formData: FormD
 }
 
 export async function deleteTemplate(templateId: string): Promise<void> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) redirect(`/admin/schedule/recurring?err=${encodeURIComponent(guard.error)}`)
+  const { user } = guard as { user: { id: string } }
 
+  const supabase = await createClient()
   const { error } = await supabase.from('recurring_templates').delete().eq('id', templateId)
-  if (error) redirect(`/admin/schedule/recurring?err=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/schedule/recurring?err=${encodeURIComponent(translatePostgresError(error, { action: 'deleteTemplate', userId: user.id }))}`)
 
   await audit(user.id, 'template.delete', 'recurring_template', templateId, 'Deleted recurring template')
   revalidatePath('/admin/schedule/recurring')
@@ -605,20 +598,26 @@ export async function deleteTemplate(templateId: string): Promise<void> {
 }
 
 export async function generateSlots(formData: FormData): Promise<void> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const guard = await requireRole(['admin', 'coordinator'])
+  if ('error' in guard) redirect(`/admin/schedule/recurring?err=${encodeURIComponent(guard.error)}`)
+  const { user } = guard as { user: { id: string } }
 
   const from = formData.get('from') as string
   const to   = formData.get('to')   as string
   if (!from || !to) redirect('/admin/schedule/recurring?err=missing_range')
-  if (from > to) redirect('/admin/schedule/recurring?err=invalid_range')
+  if (from > to)   redirect('/admin/schedule/recurring?err=invalid_range')
 
+  // Defensive cap: prevent a typo from generating decades of slots.
+  const rangeDays = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000)
+  if (rangeDays > MAX_GENERATE_RANGE_DAYS) {
+    redirect('/admin/schedule/recurring?err=range_too_large')
+  }
+
+  const supabase = await createClient()
   const { data: templates } = await supabase
     .from('recurring_templates')
     .select('*')
     .eq('active', true)
-
   if (!templates || templates.length === 0) redirect('/admin/schedule/recurring?err=no_templates')
 
   const slots: object[] = []
@@ -645,12 +644,12 @@ export async function generateSlots(formData: FormData): Promise<void> {
 
   if (slots.length === 0) redirect('/admin/schedule/recurring?err=no_matches')
 
-  // Upsert — ignore conflicts on (date, duty, start_time)
   const { error } = await supabase
     .from('slots')
     .upsert(slots, { onConflict: 'date,duty,start_time', ignoreDuplicates: true })
-
-  if (error) redirect(`/admin/schedule/recurring?err=${encodeURIComponent(error.message)}`)
+  if (error) {
+    redirect(`/admin/schedule/recurring?err=${encodeURIComponent(translatePostgresError(error, { action: 'generateSlots', userId: user.id }))}`)
+  }
 
   const created = slots.length
   await audit(user.id, 'slots.generate', 'slot', null, `Generated ${created} slots from ${from} to ${to}`)
@@ -670,7 +669,7 @@ function parseTemplateForm(formData: FormData): { error: string } | TemplatePayl
   const location     = formData.get('location')      as string
   const startTime    = formData.get('startTime')     as string
   const endTime      = formData.get('endTime')       as string
-  const maxVols      = parseInt(formData.get('maxVolunteers') as string, 10) || 1
+  const maxVols      = parseInt(formData.get('maxVolunteers') as string, 10)
   const notes        = ((formData.get('notes') as string) ?? '').trim()
   const active       = formData.get('active') !== 'false'
   const daysOfWeek   = formData.getAll('daysOfWeek').map(d => parseInt(d as string, 10))
@@ -681,6 +680,8 @@ function parseTemplateForm(formData: FormData): { error: string } | TemplatePayl
     return { error: 'Select at least one day of the week.' }
   if (startTime >= endTime)
     return { error: 'Start time must be before end time.' }
+  if (!Number.isFinite(maxVols) || maxVols < 1 || maxVols > 20)
+    return { error: 'Max volunteers must be between 1 and 20.' }
 
   return { duty, location, days_of_week: daysOfWeek, start_time: startTime, end_time: endTime, max_volunteers: maxVols, notes, active }
 }

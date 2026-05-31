@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient, getProfileForUser } from '@/lib/supabase/server'
+import { createClient, getMyProfile } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
 import PageHeader from '@/components/ui/page-header'
 import Card from '@/components/ui/card'
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
   const [profile, { data: futureSlots }, { data: allProfiles }, { count: pendingSwapCount }] =
     await Promise.all([
-      getProfileForUser(user.id),
+      getMyProfile(user.id),
       supabase.from('slots').select('*').gte('date', today).order('date').order('start_time'),
       supabase.from('profiles').select('id, role, active'),
       supabase.from('shift_swaps').select('*', { count: 'exact', head: true }).eq('status', 'pending'),

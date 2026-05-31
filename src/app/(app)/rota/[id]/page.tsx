@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient, getProfileForUser } from '@/lib/supabase/server'
+import { createClient, getMyProfile } from '@/lib/supabase/server'
 import { fmtDate, fmtDateLong, fmtTime } from '@/lib/utils'
 import SlotActions from './slot-actions'
 import Card from '@/components/ui/card'
@@ -18,7 +18,7 @@ export default async function SlotDetailPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const profile = await getProfileForUser<{ id: string; role: string }>(user.id, 'id, role')
+  const profile = await getMyProfile<{ id: string; role: string }>(user.id, 'id, role')
   if (!profile) redirect('/auth-error?reason=missing_profile')
 
   const [{ data: slot }, { data: signups }, { data: swaps }] = await Promise.all([

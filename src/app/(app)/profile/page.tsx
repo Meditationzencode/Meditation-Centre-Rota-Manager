@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createClient, getProfileForUser } from '@/lib/supabase/server'
+import { createClient, getMyProfile } from '@/lib/supabase/server'
 import ProfileForm from './profile-form'
 import UnavailabilityForm from './unavailability-form'
 import PageHeader from '@/components/ui/page-header'
@@ -15,7 +15,7 @@ export default async function ProfilePage() {
   if (!user) redirect('/login')
 
   const [profile, { data: signups }, { data: unavailability }] = await Promise.all([
-    getProfileForUser<{
+    getMyProfile<{
       id: string
       name: string
       role: 'admin' | 'coordinator' | 'volunteer' | 'viewer'

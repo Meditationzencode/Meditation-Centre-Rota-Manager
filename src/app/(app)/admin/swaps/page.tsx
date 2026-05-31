@@ -45,7 +45,7 @@ export default async function SwapsPage() {
     .order('created_at', { ascending: false })
     .limit(100)
 
-  const swaps   = (rawSwaps ?? []) as SwapEntry[]
+  const swaps   = (rawSwaps ?? []) as unknown as SwapEntry[]
   const pending  = swaps.filter(s => s.status === 'pending')
   const resolved = swaps.filter(s => s.status !== 'pending')
 
