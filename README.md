@@ -1,5 +1,11 @@
 # Meditation Centre Rota Manager
 
+[![CI](https://github.com/Meditationzencode/Meditation-Centre-Rota-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Meditationzencode/Meditation-Centre-Rota-Manager/actions/workflows/ci.yml)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/Live_demo-sangha--rota.vercel.app-22c55e?logo=vercel&logoColor=white)](https://sangha-rota.vercel.app/login)
+
 **A full-stack rota management web application for a Buddhist meditation centre.**
 
 🔗 **Live demo: [sangha-rota.vercel.app](https://sangha-rota.vercel.app/login)** &middot; **Demo accounts below — one click and you're in.**
