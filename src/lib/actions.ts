@@ -71,6 +71,24 @@ export async function logout() {
   redirect('/login')
 }
 
+export async function sendMagicLink(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
+  if (!email) return { error: 'Email address is required.' }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "That doesn't look like an email." }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${SITE_URL}/api/auth/callback?next=/dashboard`,
+    },
+  })
+
+  // Don't reveal whether the email exists — log internally, always succeed externally.
+  if (error) log.warn({ action: 'sendMagicLink', message: 'OTP request failed', err: error })
+  return { success: true }
+}
+
 // ── Profile ───────────────────────────────────────────────────────────────────
 
 export async function updateProfile(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
