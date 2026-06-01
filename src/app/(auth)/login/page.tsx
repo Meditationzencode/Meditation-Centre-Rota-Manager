@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import LoginForm from './login-form'
 import { Lotus } from './icons'
@@ -22,13 +23,13 @@ export default function LoginPage() {
       <div className="scene__wash" />
 
       {/* Brand lockup */}
-      <a className="scene__brand reveal" style={{ ['--d' as string]: '0ms' }} href="/">
+      <Link className="scene__brand reveal" style={{ ['--d' as string]: '0ms' }} href="/">
         <span className="scene__brand-mark"><Lotus size={30} /></span>
         <span className="scene__brand-text">
           <span className="scene__brand-name">Bodhi Grove</span>
           <span className="scene__brand-sub">Meditation Centre</span>
         </span>
-      </a>
+      </Link>
 
       {/* Left column: hero + Buddha quote */}
       <div className="scene__left">
