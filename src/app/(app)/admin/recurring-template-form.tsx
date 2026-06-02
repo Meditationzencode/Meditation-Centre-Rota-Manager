@@ -1,8 +1,10 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import Link from 'next/link'
 import { createTemplate, updateTemplate } from '@/lib/actions'
 import { DUTIES, LOCATIONS, type ActionResult, type RecurringTemplate } from '@/lib/types'
+import { formField as fieldCls, formLabel as labelCls, formCancelBtn } from '@/lib/form-styles'
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -15,9 +17,6 @@ export default function RecurringTemplateForm({ template }: Props) {
   const [days, setDays] = useState<number[]>(template?.days_of_week ?? [])
 
   const error = timeError ?? (state && 'error' in state ? state.error : null)
-
-  const fieldCls = 'w-full border border-stone-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent'
-  const labelCls = 'block text-sm font-medium text-stone-700 mb-1'
 
   function toggleDay(i: number) {
     setDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i].sort((a, b) => a - b))
@@ -37,17 +36,17 @@ export default function RecurringTemplateForm({ template }: Props) {
           setTimeError(null)
         }
       }}
-      className="bg-white border border-stone-200 rounded-xl shadow-sm p-6 space-y-5"
+      className="bg-white border border-sand/70 rounded-xl shadow-sm p-6 space-y-5"
     >
       {template && <input type="hidden" name="id" value={template.id} />}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3">{error}</div>
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3">{error}</div>
       )}
 
       {/* Days of week */}
       <div>
-        <label className={labelCls}>Days of week <span className="text-red-500">*</span></label>
+        <span className={labelCls}>Days of week <span className="text-red-500">*</span></span>
         <div className="flex flex-wrap gap-2 mt-1">
           {DAY_LABELS.map((label, i) => (
             <label key={i} className="cursor-pointer">
@@ -62,7 +61,7 @@ export default function RecurringTemplateForm({ template }: Props) {
               <span className={`inline-block px-3 py-1.5 rounded-md text-sm font-medium border transition-colors select-none ${
                 days.includes(i)
                   ? 'bg-sage-600 text-white border-sage-600'
-                  : 'bg-white text-stone-600 border-stone-300 hover:border-stone-400'
+                  : 'bg-white text-ink/65 border-sand hover:border-mist'
               }`}>
                 {label}
               </span>
@@ -73,15 +72,15 @@ export default function RecurringTemplateForm({ template }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>Duty <span className="text-red-500">*</span></label>
-          <select name="duty" required defaultValue={template?.duty ?? ''} className={fieldCls}>
+          <label htmlFor="tpl-duty" className={labelCls}>Duty <span className="text-red-500">*</span></label>
+          <select id="tpl-duty" name="duty" required defaultValue={template?.duty ?? ''} className={fieldCls}>
             <option value="">Select duty…</option>
             {DUTIES.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelCls}>Location <span className="text-red-500">*</span></label>
-          <select name="location" required defaultValue={template?.location ?? ''} className={fieldCls}>
+          <label htmlFor="tpl-location" className={labelCls}>Location <span className="text-red-500">*</span></label>
+          <select id="tpl-location" name="location" required defaultValue={template?.location ?? ''} className={fieldCls}>
             <option value="">Select location…</option>
             {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
@@ -90,19 +89,19 @@ export default function RecurringTemplateForm({ template }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>Start Time <span className="text-red-500">*</span></label>
-          <input type="time" name="startTime" required defaultValue={template?.start_time.slice(0, 5) ?? ''} className={fieldCls} />
+          <label htmlFor="tpl-start" className={labelCls}>Start Time <span className="text-red-500">*</span></label>
+          <input id="tpl-start" type="time" name="startTime" required defaultValue={template?.start_time.slice(0, 5) ?? ''} className={fieldCls} />
         </div>
         <div>
-          <label className={labelCls}>End Time <span className="text-red-500">*</span></label>
-          <input type="time" name="endTime" required defaultValue={template?.end_time.slice(0, 5) ?? ''} className={fieldCls} />
+          <label htmlFor="tpl-end" className={labelCls}>End Time <span className="text-red-500">*</span></label>
+          <input id="tpl-end" type="time" name="endTime" required defaultValue={template?.end_time.slice(0, 5) ?? ''} className={fieldCls} />
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>Max Volunteers <span className="text-red-500">*</span></label>
-          <input type="number" name="maxVolunteers" min={1} max={20} required
+          <label htmlFor="tpl-max" className={labelCls}>Max Volunteers <span className="text-red-500">*</span></label>
+          <input id="tpl-max" type="number" name="maxVolunteers" min={1} max={20} required
             defaultValue={template?.max_volunteers ?? 1} className={fieldCls} />
         </div>
         <div className="flex items-end pb-0.5">
@@ -115,23 +114,22 @@ export default function RecurringTemplateForm({ template }: Props) {
               defaultChecked={template?.active ?? true}
               className="w-4 h-4 accent-sage-600"
             />
-            <span className="text-sm font-medium text-stone-700">Active (generates slots)</span>
+            <span className="text-sm font-medium text-ink/80">Active (generates slots)</span>
           </label>
         </div>
       </div>
 
       <div>
-        <label className={labelCls}>Notes</label>
-        <textarea name="notes" rows={2} defaultValue={template?.notes ?? ''}
+        <label htmlFor="tpl-notes" className={labelCls}>Notes</label>
+        <textarea id="tpl-notes" name="notes" rows={2} defaultValue={template?.notes ?? ''}
           placeholder="Any special instructions…"
           className={`${fieldCls} resize-none`} />
       </div>
 
-      <div className="flex justify-end gap-3 pt-2 border-t border-stone-100">
-        <a href="/admin/schedule/recurring"
-          className="text-sm px-4 py-2 border border-stone-300 rounded-md text-stone-700 hover:bg-stone-50 transition-colors">
+      <div className="flex justify-end gap-3 pt-2 border-t border-sand/50">
+        <Link href="/admin/schedule/recurring" className={formCancelBtn}>
           Cancel
-        </a>
+        </Link>
         <button type="submit" disabled={pending}
           className="text-sm px-4 py-2 bg-sage-600 hover:bg-sage-700 disabled:opacity-60 text-white rounded-md transition-colors">
           {pending ? 'Saving…' : template ? 'Save Changes' : 'Create Template'}

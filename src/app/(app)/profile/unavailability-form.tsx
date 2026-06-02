@@ -30,8 +30,9 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
         <input type="hidden" name="user_id" />
         <div className="flex-1 flex gap-3">
           <div className="flex-shrink-0">
-            <label className="text-xs text-ink/55 block mb-1">Date</label>
+            <label htmlFor="unavail-date" className="text-xs text-ink/55 block mb-1">Date</label>
             <input
+              id="unavail-date"
               type="date"
               name="date"
               min={today}
@@ -40,8 +41,9 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
             />
           </div>
           <div className="flex-1 min-w-0">
-            <label className="text-xs text-ink/55 block mb-1">Note (optional)</label>
+            <label htmlFor="unavail-note" className="text-xs text-ink/55 block mb-1">Note (optional)</label>
             <input
+              id="unavail-note"
               type="text"
               name="note"
               placeholder="e.g. Holiday"
@@ -60,7 +62,7 @@ export default function UnavailabilityForm({ entries }: { entries: Unavailabilit
           </button>
         </div>
         {'error' in (result ?? {}) && (
-          <p className="text-sm text-red-600 sm:col-span-2">{(result as { error: string }).error}</p>
+          <p role="alert" className="text-sm text-red-600 sm:col-span-2">{(result as { error: string }).error}</p>
         )}
       </form>
 

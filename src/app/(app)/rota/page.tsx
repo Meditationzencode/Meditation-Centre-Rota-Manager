@@ -154,13 +154,13 @@ export default async function RotaPage({
         {/* Legend */}
         <div className="flex gap-5 text-xs text-ink/45 pb-2">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> My slot
+            <span className="w-2.5 h-2.5 rounded-full bg-sage-600 ring-2 ring-sage-200 inline-block" /> My slot
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-gold-500 inline-block" /> 1 spot left
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> Fully covered
+            <span className="w-2.5 h-2.5 rounded-full bg-sage-200 border border-sage-400 inline-block" /> Fully covered
           </span>
         </div>
       </div>

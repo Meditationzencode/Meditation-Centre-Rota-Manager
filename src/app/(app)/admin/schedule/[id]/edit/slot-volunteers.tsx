@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { adminAssignVolunteer, adminRemoveVolunteer } from '@/lib/actions'
 import type { ActionResult } from '@/lib/types'
+import { formField as fieldCls } from '@/lib/form-styles'
 
 interface Vol { id: string; name: string }
 
@@ -22,21 +23,19 @@ export default function SlotVolunteers({ slotId, signed, available, maxVolunteer
     (assignState && 'error' in assignState ? assignState.error : null) ??
     (removeState && 'error' in removeState ? removeState.error : null)
 
-  const fieldCls = 'border border-stone-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent'
-
   return (
-    <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-6 space-y-4">
+    <div className="bg-white border border-sand/70 rounded-xl shadow-sm p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-stone-800">Volunteers</h2>
-        <span className="text-xs text-stone-500">{signed.length} / {maxVolunteers} filled</span>
+        <h2 className="text-base font-semibold text-ink">Volunteers</h2>
+        <span className="text-xs text-ink/55">{signed.length} / {maxVolunteers} filled</span>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3">{error}</div>
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3">{error}</div>
       )}
 
       {signed.length === 0 ? (
-        <p className="text-sm text-stone-400">No volunteers assigned yet.</p>
+        <p className="text-sm text-ink/45">No volunteers assigned yet.</p>
       ) : (
         <ul className="space-y-2">
           {signed.map(vol => (
@@ -45,7 +44,7 @@ export default function SlotVolunteers({ slotId, signed, available, maxVolunteer
                 <div className="w-7 h-7 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-xs font-semibold flex-shrink-0">
                   {vol.name.charAt(0)}
                 </div>
-                <span className="text-sm text-stone-700">{vol.name}</span>
+                <span className="text-sm text-ink/70">{vol.name}</span>
               </div>
               <form action={removeAction}>
                 <input type="hidden" name="slotId" value={slotId} />
@@ -63,15 +62,15 @@ export default function SlotVolunteers({ slotId, signed, available, maxVolunteer
         </ul>
       )}
 
-      <div className="pt-2 border-t border-stone-100">
+      <div className="pt-2 border-t border-sand/50">
         {isFull ? (
-          <p className="text-xs text-stone-400">Slot is full — remove a volunteer to assign another.</p>
+          <p className="text-xs text-ink/45">Slot is full — remove a volunteer to assign another.</p>
         ) : available.length === 0 ? (
-          <p className="text-xs text-stone-400">All active volunteers are already signed up.</p>
+          <p className="text-xs text-ink/45">All active volunteers are already signed up.</p>
         ) : (
           <form action={assignAction} className="flex gap-2">
             <input type="hidden" name="slotId" value={slotId} />
-            <select name="userId" className={`${fieldCls} flex-1`} defaultValue="">
+            <select name="userId" aria-label="Select volunteer to assign" className={`${fieldCls} flex-1`} defaultValue="">
               <option value="" disabled>Select volunteer…</option>
               {available.map(vol => (
                 <option key={vol.id} value={vol.id}>{vol.name}</option>

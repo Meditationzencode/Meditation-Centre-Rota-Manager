@@ -207,10 +207,10 @@ export default async function MonthRotaPage({
         {/* Legend */}
         <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-ink/45 pb-2">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> My slot
+            <span className="w-2.5 h-2.5 rounded-full bg-sage-600 ring-2 ring-sage-200 inline-block" /> My slot
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sage-500 inline-block" /> Fully covered
+            <span className="w-2.5 h-2.5 rounded-full bg-sage-200 border border-sage-400 inline-block" /> Fully covered
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-gold-400 inline-block" /> Morning
