@@ -8,12 +8,13 @@ on:
 
 jobs:
   quality:
-    name: Typecheck · Lint · Build
+    name: Typecheck · Lint · Build · Unit tests
     runs-on: ubuntu-latest
 
     # Dummy values let the build pass env-validation without exposing
-    # real Supabase credentials. The Playwright suite still runs against
-    # a real instance locally — see README "Testing".
+    # real Supabase credentials. The full E2E/RLS Playwright suite still runs
+    # against a real instance locally — see README "Testing". The unit tests
+    # below are pure functions and need no browser, server, or database.
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://demo.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
@@ -38,3 +39,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Unit tests
+        run: npm run test:unit

@@ -9,6 +9,7 @@
     "lint": "next lint",
     "setup": "node --env-file=.env.local scripts/setup.mjs",
     "test": "playwright test",
+    "test:unit": "playwright test tests/unit",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report"
   },

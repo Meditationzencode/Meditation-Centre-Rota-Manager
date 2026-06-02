@@ -414,7 +414,7 @@ Coming from older React tutorials, my instinct was to write `/api/signups/route.
 - **Multi-centre support** — namespace slots, members, and templates under separate organisations
 - **Shift notes from volunteers** — free-text field volunteers fill in after completing a shift
 - **Recurring unavailability** — mark a recurring day (e.g. every Tuesday) rather than individual dates
-- **CI pipeline** — run the Playwright suite on every pull request via GitHub Actions
+- **Expand CI coverage** — add full Playwright E2E runs against a seeded Supabase test environment on pull requests (CI currently runs typecheck, lint, build, and the fast unit suite)
 
 ---
 
