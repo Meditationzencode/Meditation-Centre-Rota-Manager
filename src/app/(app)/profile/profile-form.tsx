@@ -30,6 +30,13 @@ export default function ProfileForm({ name, phone }: { name: string; phone: stri
       </div>
 
       <div>
+        <label htmlFor="profile-current" className={labelCls}>
+          Current Password <span className="text-ink/45 font-normal">(required only to change your password)</span>
+        </label>
+        <input id="profile-current" type="password" name="currentPassword" autoComplete="current-password" placeholder="••••••••" className={fieldCls} />
+      </div>
+
+      <div>
         <label htmlFor="profile-password" className={labelCls}>
           New Password <span className="text-ink/45 font-normal">(leave blank to keep current)</span>
         </label>

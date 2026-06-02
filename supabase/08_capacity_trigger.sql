@@ -19,16 +19,19 @@ DECLARE
   current_count INTEGER;
   cap           INTEGER;
 BEGIN
-  SELECT max_volunteers INTO cap FROM public.slots WHERE id = NEW.slot_id;
+  -- Lock the parent slot row FOR UPDATE. This serialises all concurrent
+  -- signups for the same slot: two different volunteers inserting at once
+  -- take distinct (slot_id, user_id) unique-index locks and would NOT block
+  -- each other, so without this lock both could read the same pre-insert
+  -- count and overfill the slot. Locking the slot row forces them to queue.
+  SELECT max_volunteers INTO cap FROM public.slots WHERE id = NEW.slot_id FOR UPDATE;
   IF cap IS NULL THEN
     RAISE EXCEPTION 'slot_not_found: %', NEW.slot_id;
   END IF;
 
-  -- Count existing signups for this slot. Counting BEFORE the insert is fine
-  -- because the trigger runs inside the same transaction as the INSERT; a
-  -- concurrent inserter is either blocked on the row-level lock taken by
-  -- the matching unique index, or has already committed and will be visible
-  -- to this SELECT.
+  -- With the slot row locked above, a concurrent inserter for this slot has
+  -- either already committed (and is visible here) or is still waiting on the
+  -- lock, so this count is accurate at decision time.
   SELECT COUNT(*) INTO current_count
     FROM public.signups
    WHERE slot_id = NEW.slot_id;

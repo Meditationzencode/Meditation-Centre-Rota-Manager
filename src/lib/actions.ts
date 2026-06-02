@@ -3,12 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { getWeekStart, addDays } from '@/lib/utils'
 import { sendSignupConfirmation, sendSignupCancelled, sendSwapRequestedToAdmins, sendSwapDecision } from '@/lib/email'
 import { requireUser, requireRole } from '@/lib/auth'
 import { translatePostgresError } from '@/lib/errors'
 import { log } from '@/lib/log'
 import { SITE_URL } from '@/lib/env'
+import { parseSlotForm, parseTemplateForm, str, isEmail, MAX_LEN } from '@/lib/validation'
+import { expandTemplatesToSlots, type SlotTemplate } from '@/lib/scheduling'
 import type { ActionResult, Role } from '@/lib/types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -31,26 +32,22 @@ async function audit(
 }
 
 /**
- * Fetch every auth.users page so we don't silently miss admins beyond the
- * default first-page cutoff (50 users). Used to gather admin emails for
- * swap-request notifications.
+ * Resolve email addresses for a set of profile IDs via the admin auth API.
+ * Looks each ID up directly (admins are few) instead of scanning the entire
+ * auth.users table.
  */
-async function fetchAllAuthUsers() {
+async function emailsForUserIds(ids: string[]): Promise<string[]> {
   const admin = createAdminClient()
-  const perPage = 200
-  const all: { id: string; email?: string }[] = []
-  for (let page = 1; ; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage })
+  const emails: string[] = []
+  for (const id of ids) {
+    const { data, error } = await admin.auth.admin.getUserById(id)
     if (error) {
-      log.error({ action: 'fetchAllAuthUsers', message: 'listUsers failed', err: error })
-      break
+      log.warn({ action: 'emailsForUserIds', userId: id, message: 'getUserById failed', err: error })
+      continue
     }
-    const users = data.users
-    if (!users || users.length === 0) break
-    all.push(...users.map(u => ({ id: u.id, email: u.email ?? undefined })))
-    if (users.length < perPage) break
+    if (data.user?.email) emails.push(data.user.email)
   }
-  return all
+  return emails
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -95,18 +92,33 @@ export async function updateProfile(_prev: ActionResult | null, formData: FormDa
   const user = await requireUser()
   const supabase = await createClient()
 
-  const name = ((formData.get('name') as string) ?? '').trim()
+  const name = str(formData.get('name'))
   if (!name) return { error: 'Name cannot be empty.' }
+  if (name.length > MAX_LEN.name) return { error: `Name must be ${MAX_LEN.name} characters or fewer.` }
 
-  const phone_number = ((formData.get('phone') as string) ?? '').trim()
+  const phone_number = str(formData.get('phone'))
+  if (phone_number.length > MAX_LEN.phone) return { error: `Phone number must be ${MAX_LEN.phone} characters or fewer.` }
 
   const { error } = await supabase.from('profiles').update({ name, phone_number }).eq('id', user.id)
   if (error) return { error: translatePostgresError(error, { action: 'updateProfile', userId: user.id }) }
 
-  const newPassword = ((formData.get('password') as string) ?? '').trim()
+  const newPassword = str(formData.get('password'))
   if (newPassword) {
-    const confirm = ((formData.get('confirmPassword') as string) ?? '').trim()
+    const confirm = str(formData.get('confirmPassword'))
+    if (newPassword.length < 8) return { error: 'New password must be at least 8 characters.' }
     if (newPassword !== confirm) return { error: 'Passwords do not match.' }
+
+    // Re-authenticate with the current password before changing it, so a
+    // hijacked or borrowed session cannot silently reset the account password.
+    const currentPassword = str(formData.get('currentPassword'))
+    if (!currentPassword) return { error: 'Enter your current password to change it.' }
+    if (!user.email) return { error: 'Cannot verify identity for this account.' }
+    const { error: reauthErr } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    })
+    if (reauthErr) return { error: 'Current password is incorrect.' }
+
     const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword })
     if (pwErr) return { error: pwErr.message }
   }
@@ -121,9 +133,10 @@ export async function addUnavailability(_prev: ActionResult | null, formData: Fo
   const user = await requireUser()
   const supabase = await createClient()
 
-  const date = ((formData.get('date') as string) ?? '').trim()
-  const note = ((formData.get('note') as string) ?? '').trim()
+  const date = str(formData.get('date'))
+  const note = str(formData.get('note'))
   if (!date) return { error: 'Please select a date.' }
+  if (note.length > MAX_LEN.unavailNote) return { error: `Note must be ${MAX_LEN.unavailNote} characters or fewer.` }
 
   const { error } = await supabase.from('unavailability').insert({ user_id: user.id, date, note })
   if (error) {
@@ -211,8 +224,9 @@ export async function requestSwap(_prev: ActionResult | null, formData: FormData
   const supabase = await createClient()
 
   const slotId = formData.get('slotId') as string
-  const reason = ((formData.get('reason') as string) ?? '').trim()
+  const reason = str(formData.get('reason'))
   if (!slotId) return { error: 'Missing slot.' }
+  if (reason.length > MAX_LEN.reason) return { error: `Reason must be ${MAX_LEN.reason} characters or fewer.` }
 
   const { data: signup } = await supabase
     .from('signups').select('id').eq('slot_id', slotId).eq('user_id', user.id).single()
@@ -228,16 +242,12 @@ export async function requestSwap(_prev: ActionResult | null, formData: FormData
 
   await audit(user.id, 'swap.request', 'shift_swap', slotId, `Requested swap for slot ${slotId}`)
 
-  // Notify admins. Paginates through auth.users so we never silently miss
-  // an admin beyond the default first-page cutoff.
+  // Notify admins. Resolve each admin's email directly by id rather than
+  // scanning the whole auth.users table.
   if (slot) {
     const { data: adminProfiles } = await supabase.from('profiles').select('id').eq('role', 'admin')
     if (adminProfiles && adminProfiles.length > 0) {
-      const adminIds = new Set(adminProfiles.map(p => p.id))
-      const allUsers = await fetchAllAuthUsers()
-      const adminEmails = allUsers
-        .filter(u => adminIds.has(u.id) && u.email)
-        .map(u => u.email!)
+      const adminEmails = await emailsForUserIds(adminProfiles.map(p => p.id))
       const requesterName =
         (await supabase.from('profiles').select('name').eq('id', user.id).single()).data?.name ?? 'A volunteer'
       await sendSwapRequestedToAdmins(adminEmails, requesterName, slot.duty, slot.date, reason)
@@ -255,24 +265,31 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
 
   const swapId     = formData.get('swapId')     as string
   const decision   = formData.get('decision')   as 'approved' | 'rejected'
-  const adminNotes = ((formData.get('adminNotes') as string) ?? '').trim()
+  const adminNotes = str(formData.get('adminNotes'))
   if (!swapId || (decision !== 'approved' && decision !== 'rejected')) {
     return { error: 'Invalid swap decision.' }
   }
+  if (adminNotes.length > MAX_LEN.adminNotes) return { error: `Notes must be ${MAX_LEN.adminNotes} characters or fewer.` }
 
   const adminClient = createAdminClient()
   const { data: swap } = await adminClient
     .from('shift_swaps')
-    .select('requester_id, slot_id, slot:slots(duty, date)')
+    .select('requester_id, slot_id, status, slot:slots(duty, date)')
     .eq('id', swapId)
     .single()
   if (!swap) return { error: 'Swap request not found.' }
+  if (swap.status !== 'pending') return { error: 'This swap request has already been reviewed.' }
 
-  const { error } = await adminClient
+  // Guard the update on the still-pending status so two admins reviewing at
+  // once cannot both apply a decision.
+  const { data: updated, error } = await adminClient
     .from('shift_swaps')
     .update({ status: decision, reviewed_by: user.id, reviewed_at: new Date().toISOString(), admin_notes: adminNotes })
     .eq('id', swapId)
+    .eq('status', 'pending')
+    .select('id')
   if (error) return { error: translatePostgresError(error, { action: 'reviewSwap', userId: user.id }) }
+  if (!updated || updated.length === 0) return { error: 'This swap request has already been reviewed.' }
 
   if (decision === 'approved') {
     await adminClient.from('signups').delete().eq('slot_id', swap.slot_id).eq('user_id', swap.requester_id)
@@ -295,41 +312,6 @@ export async function reviewSwap(_prev: ActionResult | null, formData: FormData)
 }
 
 // ── Slots (admin / coordinator) ───────────────────────────────────────────────
-
-type SlotPayload = {
-  date: string; week_start: string; start_time: string; end_time: string
-  duty: string; location: string; max_volunteers: number; notes: string; status: string
-}
-
-function parseSlotForm(formData: FormData): { error: string } | SlotPayload {
-  const date      = formData.get('date')          as string
-  const startTime = formData.get('startTime')     as string
-  const endTime   = formData.get('endTime')       as string
-  const duty      = formData.get('duty')          as string
-  const location  = formData.get('location')      as string
-  const maxVols   = parseInt(formData.get('maxVolunteers') as string, 10)
-  const notes     = ((formData.get('notes') as string) ?? '').trim()
-  const status    = (formData.get('status') as string) === 'cancelled' ? 'cancelled' : 'open'
-
-  if (!date || !startTime || !endTime || !duty || !location)
-    return { error: 'All fields except notes are required.' }
-  if (startTime >= endTime)
-    return { error: 'Start time must be before end time.' }
-  if (!Number.isFinite(maxVols) || maxVols < 1 || maxVols > 20)
-    return { error: 'Max volunteers must be between 1 and 20.' }
-
-  return {
-    date,
-    week_start:     getWeekStart(date),
-    start_time:     startTime,
-    end_time:       endTime,
-    duty,
-    location,
-    max_volunteers: maxVols,
-    notes,
-    status,
-  }
-}
 
 export async function createSlot(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const guard = await requireRole(['admin', 'coordinator'])
@@ -446,11 +428,14 @@ export async function createMember(_prev: ActionResult | null, formData: FormDat
   if ('error' in guard) return guard
   const { user: caller } = guard
 
-  const name     = ((formData.get('name')     as string) ?? '').trim()
-  const email    = ((formData.get('email')    as string) ?? '').trim()
+  const name     = str(formData.get('name'))
+  const email    = str(formData.get('email')).toLowerCase()
   const role     = formData.get('role')      as Role
-  const password = ((formData.get('password') as string) ?? '').trim()
+  const password = str(formData.get('password'))
   if (!name || !email || !role || !password) return { error: 'All fields are required.' }
+  if (name.length > MAX_LEN.name) return { error: `Name must be ${MAX_LEN.name} characters or fewer.` }
+  if (!isEmail(email)) return { error: 'Please enter a valid email address.' }
+  if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
 
   const admin = createAdminClient()
   const { data, error } = await admin.auth.admin.createUser({
@@ -478,17 +463,19 @@ export async function updateMember(_prev: ActionResult | null, formData: FormDat
   const { user } = guard
 
   const id     = formData.get('id')   as string
-  const name   = ((formData.get('name')  as string) ?? '').trim()
+  const name   = str(formData.get('name'))
   const role   = formData.get('role')  as Role
   const active = formData.get('active') === 'true'
   if (!id || !name || !role) return { error: 'Name and role are required.' }
+  if (name.length > MAX_LEN.name) return { error: `Name must be ${MAX_LEN.name} characters or fewer.` }
 
   const supabase = await createClient()
   const { error } = await supabase.from('profiles').update({ name, role, active }).eq('id', id)
   if (error) return { error: translatePostgresError(error, { action: 'updateMember', userId: user.id }) }
 
-  const password = ((formData.get('password') as string | null) ?? '').trim()
+  const password = str(formData.get('password'))
   if (password) {
+    if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
     const admin = createAdminClient()
     const { error: pwErr } = await admin.auth.admin.updateUserById(id, { password })
     if (pwErr) return { error: pwErr.message }
@@ -638,27 +625,7 @@ export async function generateSlots(formData: FormData): Promise<void> {
     .eq('active', true)
   if (!templates || templates.length === 0) redirect('/admin/schedule/recurring?err=no_templates')
 
-  const slots: object[] = []
-  let cursor = from
-  while (cursor <= to) {
-    const dow = new Date(`${cursor}T00:00:00Z`).getUTCDay() // 0=Sun
-    const rota = dow === 0 ? 6 : dow - 1 // convert to 0=Mon...6=Sun
-    for (const t of templates) {
-      if ((t.days_of_week as number[]).includes(rota)) {
-        slots.push({
-          date: cursor,
-          week_start: getWeekStart(cursor),
-          duty: t.duty,
-          location: t.location,
-          start_time: t.start_time,
-          end_time: t.end_time,
-          max_volunteers: t.max_volunteers,
-          notes: t.notes ?? '',
-        })
-      }
-    }
-    cursor = addDays(cursor, 1)
-  }
+  const slots = expandTemplatesToSlots(templates as SlotTemplate[], from, to)
 
   if (slots.length === 0) redirect('/admin/schedule/recurring?err=no_matches')
 
@@ -675,31 +642,4 @@ export async function generateSlots(formData: FormData): Promise<void> {
   revalidatePath('/admin/schedule')
   revalidatePath('/admin/schedule/recurring')
   redirect(`/admin/schedule/recurring?generated=${created}`)
-}
-
-type TemplatePayload = {
-  duty: string; location: string; days_of_week: number[]
-  start_time: string; end_time: string; max_volunteers: number; notes: string; active: boolean
-}
-
-function parseTemplateForm(formData: FormData): { error: string } | TemplatePayload {
-  const duty         = formData.get('duty')          as string
-  const location     = formData.get('location')      as string
-  const startTime    = formData.get('startTime')     as string
-  const endTime      = formData.get('endTime')       as string
-  const maxVols      = parseInt(formData.get('maxVolunteers') as string, 10)
-  const notes        = ((formData.get('notes') as string) ?? '').trim()
-  const active       = formData.get('active') !== 'false'
-  const daysOfWeek   = formData.getAll('daysOfWeek').map(d => parseInt(d as string, 10))
-
-  if (!duty || !location || !startTime || !endTime)
-    return { error: 'Duty, location, and times are required.' }
-  if (daysOfWeek.length === 0)
-    return { error: 'Select at least one day of the week.' }
-  if (startTime >= endTime)
-    return { error: 'Start time must be before end time.' }
-  if (!Number.isFinite(maxVols) || maxVols < 1 || maxVols > 20)
-    return { error: 'Max volunteers must be between 1 and 20.' }
-
-  return { duty, location, days_of_week: daysOfWeek, start_time: startTime, end_time: endTime, max_volunteers: maxVols, notes, active }
 }

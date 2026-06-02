@@ -6,7 +6,11 @@ export async function GET(request: Request) {
   const code       = searchParams.get('code')
   const tokenHash  = searchParams.get('token_hash')
   const type       = searchParams.get('type') as 'recovery' | 'signup' | 'email' | null
-  const next       = searchParams.get('next') ?? '/dashboard'
+
+  // Only allow same-origin relative redirects (reject //host, /\host, absolute
+  // URLs) so the callback can't be used as an open redirect.
+  const rawNext = searchParams.get('next') ?? '/dashboard'
+  const next = /^\/(?![/\\])/.test(rawNext) ? rawNext : '/dashboard'
 
   const supabase = await createClient()
 
