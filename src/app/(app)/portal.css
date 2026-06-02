@@ -15,7 +15,7 @@
   --ink:          #2B2620;
   --ink-soft:     #4A4338;
   --ink-muted:    #756B5C;
-  --ink-faint:    #9A8F7D;
+  --ink-faint:    #7C7260;
 
   --sage:         #7B8A6B;
   --sage-deep:    #5C6A4D;
@@ -180,21 +180,6 @@
   background: var(--gold); border: 2px solid var(--surface);
 }
 
-.searchbar {
-  display: flex; align-items: center; gap: 10px; width: clamp(220px, 24vw, 320px);
-  padding: 11px 16px; border-radius: 999px;
-  background: var(--surface); border: 1px solid var(--sand); box-shadow: var(--shadow-sm);
-  color: var(--ink-faint);
-  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-}
-.searchbar:focus-within { border-color: var(--sage); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sage) 16%, transparent); }
-.searchbar svg { flex: none; }
-.searchbar input {
-  flex: 1; min-width: 0; border: none; background: none; outline: none;
-  font-family: var(--sans); font-size: 14px; color: var(--ink);
-}
-.searchbar input::placeholder { color: var(--ink-faint); }
-
 .topbar__actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
 .actbtn {
   display: inline-flex; align-items: center; gap: 9px;
@@ -332,7 +317,7 @@
 .tlpill svg { width: 13px; height: 13px; flex: none; }
 .tlpill--covered { background: var(--sage-tint); color: var(--sage-deep); }
 .tlpill--alert { background: color-mix(in srgb, var(--gold) 24%, var(--surface)); color: var(--gold-deep); }
-.tlpill--progress { background: color-mix(in srgb, var(--st-mist) 22%, var(--surface)); color: var(--st-mist); }
+.tlpill--progress { background: color-mix(in srgb, var(--st-mist) 22%, var(--surface)); color: #4f5b66; }
 .tlpill--done { background: var(--sage-tint); color: var(--sage-deep); }
 .tlpill--progress svg { animation: portal-spin 2.4s linear infinite; }
 .timeline__foot { font-size: 12px; color: var(--ink-faint); margin-top: 16px; padding-left: 12px; }
@@ -433,10 +418,35 @@
 }
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
-  .side { position: relative; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .side__brand { flex-direction: row; padding: 14px 18px; }
-  .side__nav { flex-direction: row; flex-wrap: wrap; flex: 1; }
+
+  /* Sidebar becomes a sticky top bar: brand left, scrollable nav, compact sign-out. */
+  .side {
+    position: sticky; top: 0; z-index: 20; height: auto;
+    flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 6px;
+    border-right: none; border-bottom: 1px solid var(--sand);
+  }
+  .side__brand { flex: none; flex-direction: row; gap: 10px; padding: 12px 14px; }
+  .side__brand-mark { width: 40px; height: 40px; }
+
+  .side__nav {
+    flex: 1; min-width: 0; flex-direction: row; flex-wrap: nowrap;
+    gap: 4px; padding: 8px 4px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .side__nav::-webkit-scrollbar { display: none; }
+  .navitem { flex: none; white-space: nowrap; padding: 9px 12px; }
   .navitem--active::before { display: none; }
+
   .side__leaf { display: none; }
+
+  /* Compact user area: hide the full user link, keep a small sign-out. */
+  .side__userwrap {
+    flex: none; margin-left: auto; display: flex; align-items: center;
+    border-top: none; background: none;
+  }
+  .side__user { display: none; }
+  .side__signout { width: auto; margin: 0 12px 0 0; padding: 9px 16px; }
+
+  .topbar__title { white-space: normal; }
   .statgrid { grid-template-columns: 1fr; }
 }

@@ -2,7 +2,10 @@
 // Ported from the design handoff (design_handoff_dashboard/icons.jsx);
 // strokes inherit currentColor so they tint with the palette.
 
-type Props = { size?: number; sw?: number; className?: string }
+export type IconProps = { size?: number; sw?: number; className?: string }
+export type IconComponent = (props: IconProps) => React.JSX.Element
+
+type Props = IconProps
 
 const base = {
   fill: 'none' as const,

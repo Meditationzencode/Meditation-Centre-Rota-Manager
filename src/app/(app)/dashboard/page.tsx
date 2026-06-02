@@ -8,14 +8,13 @@ import {
   Lotus, IconBell, IconCalendar, IconCalEx, IconUsers, IconSwap, IconHeart,
   IconCheck, IconRepeat, IconLeaf, IconCup, IconSunrise, IconSunset,
   IconClipCheck, IconPlus, IconArrowR, IconChevR,
+  type IconComponent,
 } from '@/components/portal/icons'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
-type IconCmp = (p: { size?: number }) => React.JSX.Element
-
 /* Pick a calm icon for a duty in the "centre rhythm" ribbon. */
-function rhythmIcon(duty: string, start: string): { Icon: IconCmp; gold: boolean } {
+function rhythmIcon(duty: string, start: string): { Icon: IconComponent; gold: boolean } {
   const d = duty.toLowerCase()
   if (d.includes('tea')) return { Icon: IconCup, gold: false }
   if (d.includes('garden')) return { Icon: IconLeaf, gold: false }
@@ -25,7 +24,7 @@ function rhythmIcon(duty: string, start: string): { Icon: IconCmp; gold: boolean
 }
 
 type SlotStatus = 'covered' | 'alert' | 'progress' | 'done'
-const PILL: Record<SlotStatus, { Icon: IconCmp; label: string; dot: string }> = {
+const PILL: Record<SlotStatus, { Icon: IconComponent; label: string; dot: string }> = {
   covered:  { Icon: IconCheck,  label: 'Covered',       dot: '' },
   alert:    { Icon: IconUsers,  label: 'Needs support', dot: 'alert' },
   progress: { Icon: IconRepeat, label: 'In progress',   dot: 'mist' },
@@ -130,7 +129,7 @@ export default async function DashboardPage() {
   ]
 
   // Notes & reminders — derived from real signals.
-  type Note = { tone: 'sage' | 'gold' | 'rose'; Icon: IconCmp; title: string; sub: string; href: string }
+  type Note = { tone: 'sage' | 'gold' | 'rose'; Icon: IconComponent; title: string; sub: string; href: string }
   const notes: Note[] = []
   if (isManager) {
     if ((pendingSwapCount ?? 0) > 0) notes.push({

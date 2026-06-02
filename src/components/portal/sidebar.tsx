@@ -7,12 +7,13 @@ import type { Profile } from '@/lib/types'
 import {
   Lotus, IconHome, IconCalendar, IconCalEx, IconUsers, IconBook,
   IconSwap, IconChart, IconGear, IconChevD,
+  type IconComponent,
 } from './icons'
 
 type NavItem = {
   href: string
   label: string
-  Icon: (p: { size?: number }) => React.JSX.Element
+  Icon: IconComponent
   badge?: number
 }
 
