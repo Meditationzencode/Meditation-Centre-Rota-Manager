@@ -419,33 +419,38 @@
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
 
-  /* Sidebar becomes a sticky top bar: brand left, scrollable nav, compact sign-out. */
+  /* Sidebar becomes a sticky top bar.
+     Row 1: brand (left) + compact sign-out (right).
+     Row 2: full-width, horizontally scrollable nav. */
   .side {
     position: sticky; top: 0; z-index: 20; height: auto;
-    flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 6px;
+    flex-direction: row; flex-wrap: wrap; align-items: center;
     border-right: none; border-bottom: 1px solid var(--sand);
   }
-  .side__brand { flex: none; flex-direction: row; gap: 10px; padding: 12px 14px; }
-  .side__brand-mark { width: 40px; height: 40px; }
+  .side__brand { order: 1; flex: 1; min-width: 0; flex-direction: row; gap: 10px; padding: 12px 14px; }
+  .side__brand-mark { width: 38px; height: 38px; }
+  .side__brand-sub { display: none; }
 
-  .side__nav {
-    flex: 1; min-width: 0; flex-direction: row; flex-wrap: nowrap;
-    gap: 4px; padding: 8px 4px; overflow-x: auto;
-    -webkit-overflow-scrolling: touch; scrollbar-width: none;
-  }
-  .side__nav::-webkit-scrollbar { display: none; }
-  .navitem { flex: none; white-space: nowrap; padding: 9px 12px; }
-  .navitem--active::before { display: none; }
-
-  .side__leaf { display: none; }
-
-  /* Compact user area: hide the full user link, keep a small sign-out. */
+  /* Compact user area on row 1: hide the full user link, keep a small sign-out. */
   .side__userwrap {
-    flex: none; margin-left: auto; display: flex; align-items: center;
+    order: 2; flex: none; display: flex; align-items: center;
     border-top: none; background: none;
   }
   .side__user { display: none; }
-  .side__signout { width: auto; margin: 0 12px 0 0; padding: 9px 16px; }
+  .side__signout { width: auto; margin: 0 12px 0 0; padding: 8px 15px; }
+
+  .side__nav {
+    order: 3; flex-basis: 100%; width: 100%;
+    flex-direction: row; flex-wrap: nowrap; gap: 4px;
+    padding: 8px 10px; overflow-x: auto;
+    border-top: 1px solid var(--sand-soft);
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .side__nav::-webkit-scrollbar { display: none; }
+  .navitem { flex: none; width: auto; white-space: nowrap; padding: 9px 12px; }
+  .navitem--active::before { display: none; }
+
+  .side__leaf { display: none; }
 
   .topbar__title { white-space: normal; }
   .statgrid { grid-template-columns: 1fr; }
