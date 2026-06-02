@@ -19,7 +19,7 @@ Built as a portfolio project to demonstrate full-stack engineering end-to-end �
 **By the numbers:**
 - **7 PostgreSQL tables** with Row-Level Security on every one
 - **4 user roles** with three independent layers of access control (database, middleware, server actions)
-- **50 Playwright end-to-end tests** covering auth, permissions, CRUD, and the full swap lifecycle
+- **54 Playwright tests** covering auth, permissions, CRUD, the full swap lifecycle, and Row-Level Security enforced directly at the database
 - **18+ screens** across desktop and mobile breakpoints, all captured below
 - **Deployed live on Vercel** — try it without cloning a thing
 
@@ -347,7 +347,7 @@ supabase/
 
 ## Testing
 
-The project includes tests for authentication, role-based permissions, shift CRUD actions, and form validation.
+The project includes tests for authentication, role-based permissions, shift CRUD actions, form validation, and database-level Row-Level Security.
 
 Key tested areas:
 - Login and logout flow
@@ -355,6 +355,9 @@ Key tested areas:
 - Admin-only permissions
 - Shift creation, editing and deletion
 - Availability form validation
+- Row-Level Security enforced at the database
+
+Most specs drive a real browser against the running app. The RLS suite ([`tests/rls.spec.ts`](tests/rls.spec.ts)) is different: it queries Postgres directly with the **anon key — the same key shipped in the browser bundle** — to prove that even a request crafted in DevTools, bypassing middleware and Server Actions entirely, cannot read another user's data or let a volunteer escalate their own role. This verifies the database is the ultimate authority, not just the application code.
 
 ### Prerequisites
 
