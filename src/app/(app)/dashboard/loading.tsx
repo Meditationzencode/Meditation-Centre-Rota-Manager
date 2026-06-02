@@ -1,49 +1,65 @@
-import PageHeader from '@/components/ui/page-header'
-import Card from '@/components/ui/card'
-import Skeleton from '@/components/ui/skeleton'
+// Skeleton mirroring the portal dashboard layout. Styles come from
+// portal.css (imported by the (app) layout), so the tokens are in scope.
 
 export default function DashboardLoading() {
   return (
-    <div>
-      <PageHeader title="Loading…" />
+    <>
+      <header className="topbar">
+        <div>
+          <span className="sk" style={{ width: 160, height: 15, marginBottom: 12 }} />
+          <span className="sk" style={{ width: 'min(360px, 70vw)', height: 44 }} />
+        </div>
+      </header>
 
-      <div className="max-w-6xl mx-auto px-5 space-y-8">
-        {/* Stats row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="rhythm" style={{ alignItems: 'center' }}>
+        <div className="rhythm__lead">
+          <span className="sk rhythm__leaf" />
+          <span className="sk" style={{ width: 100, height: 38 }} />
+        </div>
+        <div className="rhythm__items">
           {[0, 1, 2, 3].map(i => (
-            <Card key={i} className="px-4 py-4 flex items-center gap-3.5">
-              <Skeleton className="w-11 h-11 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-6 w-10" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-            </Card>
+            <div className="rhythm__item" key={i}>
+              <span className="sk" style={{ width: 44, height: 44, borderRadius: 999 }} />
+              <span className="sk" style={{ width: 88, height: 30 }} />
+            </div>
           ))}
         </div>
+      </section>
 
-        {/* Two-column lists */}
-        <div className="grid lg:grid-cols-2 gap-6 lg:items-start">
-          {[0, 1].map(i => (
-            <Card key={i} clip>
-              <div className="px-5 py-4 border-b border-sand/60">
-                <Skeleton className="h-5 w-44" />
+      <section className="statgrid">
+        {[0, 1, 2, 3].map(i => (
+          <div className="statcard" key={i}>
+            <div className="statcard__top">
+              <span className="sk" style={{ width: 46, height: 46, borderRadius: 12 }} />
+              <div style={{ flex: 1 }}>
+                <span className="sk" style={{ width: '70%', height: 13, marginBottom: 10 }} />
+                <span className="sk" style={{ width: 56, height: 34 }} />
               </div>
-              <div className="divide-y divide-sand/40">
-                {[0, 1, 2, 3].map(j => (
-                  <div key={j} className="flex items-center gap-3 px-5 py-3">
-                    <Skeleton className="h-3 w-12" />
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-4 w-40" />
-                      <Skeleton className="h-3 w-28" />
-                    </div>
-                    <Skeleton className="h-5 w-12 rounded-full" />
-                  </div>
-                ))}
+            </div>
+            <span className="sk" style={{ width: '50%', height: 12, marginTop: 18 }} />
+          </div>
+        ))}
+      </section>
+
+      <section className="contentgrid">
+        {[0, 1].map(i => (
+          <div className="panel" key={i}>
+            <div className="panel__head">
+              <span className="sk" style={{ width: 200, height: 26 }} />
+              <span className="sk" style={{ width: 96, height: 32, borderRadius: 999 }} />
+            </div>
+            {[0, 1, 2, 3].map(j => (
+              <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0' }}>
+                <span className="sk" style={{ width: 42, height: 42, borderRadius: 999 }} />
+                <div style={{ flex: 1 }}>
+                  <span className="sk" style={{ width: '60%', height: 15, marginBottom: 8 }} />
+                  <span className="sk" style={{ width: '40%', height: 12 }} />
+                </div>
               </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
+            ))}
+          </div>
+        ))}
+      </section>
+    </>
   )
 }

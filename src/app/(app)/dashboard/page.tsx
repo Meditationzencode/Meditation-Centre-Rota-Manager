@@ -1,24 +1,45 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { createClient, getMyProfile } from '@/lib/supabase/server'
 import { fmtDate, fmtTime } from '@/lib/utils'
-import PageHeader from '@/components/ui/page-header'
-import Card from '@/components/ui/card'
-import EmptyState from '@/components/ui/empty-state'
 import {
-  UsersIcon, HandshakeIcon, SwapIcon, ClipboardIcon,
-  PlusIcon, CalendarIcon, UserPlusIcon,
-} from '@/components/ui/icons'
+  Lotus, IconBell, IconCalendar, IconCalEx, IconUsers, IconSwap, IconHeart,
+  IconCheck, IconRepeat, IconLeaf, IconCup, IconSunrise, IconSunset,
+  IconClipCheck, IconPlus, IconArrowR, IconChevR,
+} from '@/components/portal/icons'
 
 export const metadata: Metadata = { title: 'Dashboard' }
+
+type IconCmp = (p: { size?: number }) => React.JSX.Element
+
+/* Pick a calm icon for a duty in the "centre rhythm" ribbon. */
+function rhythmIcon(duty: string, start: string): { Icon: IconCmp; gold: boolean } {
+  const d = duty.toLowerCase()
+  if (d.includes('tea')) return { Icon: IconCup, gold: false }
+  if (d.includes('garden')) return { Icon: IconLeaf, gold: false }
+  const meditation = d.includes('sitting') || d.includes('meditat') || d.includes('shrine') || d.includes('chant')
+  if (meditation) return start < '12:00' ? { Icon: IconSunrise, gold: true } : { Icon: IconSunset, gold: true }
+  return { Icon: IconCalendar, gold: false }
+}
+
+type SlotStatus = 'covered' | 'alert' | 'progress' | 'done'
+const PILL: Record<SlotStatus, { Icon: IconCmp; label: string; dot: string }> = {
+  covered:  { Icon: IconCheck,  label: 'Covered',       dot: '' },
+  alert:    { Icon: IconUsers,  label: 'Needs support', dot: 'alert' },
+  progress: { Icon: IconRepeat, label: 'In progress',   dot: 'mist' },
+  done:     { Icon: IconCheck,  label: 'Complete',      dot: 'done' },
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const today = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const today = now.toISOString().slice(0, 10)
+  const nowHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   const [profile, { data: futureSlots }, { data: allProfiles }, { count: pendingSwapCount }] =
     await Promise.all([
@@ -37,206 +58,327 @@ export default async function DashboardPage() {
 
   const isViewer  = profile.role === 'viewer'
   const isManager = profile.role === 'admin' || profile.role === 'coordinator'
+  const isAdmin   = profile.role === 'admin'
+  const firstName = profile.name.split(' ')[0]
 
-  // My upcoming duties (not applicable to viewers)
+  const countFor = (slotId: string) => (allSignups ?? []).filter(s => s.slot_id === slotId).length
+
+  // Today's services, with derived coverage/timing status.
+  const todaySlots = (futureSlots ?? []).filter(s => s.date === today)
+  const scheduleRows = todaySlots.slice(0, 6).map(s => {
+    const signups = countFor(s.id)
+    const start = fmtTime(s.start_time)
+    const end = fmtTime(s.end_time)
+    let status: SlotStatus
+    if (end <= nowHM) status = 'done'
+    else if (start <= nowHM && nowHM < end) status = 'progress'
+    else if (signups === 0) status = 'alert'
+    else status = 'covered'
+    return { id: s.id, start, end, duty: s.duty, location: s.location, status }
+  })
+
+  // Centre rhythm ribbon — the first few of today's activities.
+  const rhythm = todaySlots.slice(0, 4).map(s => {
+    const start = fmtTime(s.start_time)
+    return { id: s.id, name: s.duty, time: start, ...rhythmIcon(s.duty, start) }
+  })
+
+  // My upcoming duties (everyone but viewers).
   const mySignupSlotIds = new Set(
     (allSignups ?? []).filter(s => s.user_id === user.id).map(s => s.slot_id),
   )
   const myUpcomingAll = (futureSlots ?? []).filter(s => mySignupSlotIds.has(s.id))
-  const myUpcoming    = myUpcomingAll.slice(0, 5)
+  const myUpcoming = myUpcomingAll.slice(0, 5)
   const myUpcomingMore = myUpcomingAll.length - myUpcoming.length
 
-  // Open slots in next 7 days
-  const sevenDays = new Date()
+  // Open slots in the next 7 days.
+  const sevenDays = new Date(now)
   sevenDays.setDate(sevenDays.getDate() + 7)
   const sevenDaysStr = sevenDays.toISOString().slice(0, 10)
-
   const openSlots = (futureSlots ?? [])
-    .filter(s => s.date >= today && s.date <= sevenDaysStr)
-    .map(s => {
-      const count = (allSignups ?? []).filter(sig => sig.slot_id === s.id).length
-      return { ...s, spotsLeft: s.max_volunteers - count }
-    })
+    .filter(s => s.date <= sevenDaysStr)
+    .map(s => ({ ...s, spotsLeft: s.max_volunteers - countFor(s.id) }))
     .filter(s => s.spotsLeft > 0)
-    .slice(0, 6)
 
-  const stats = isManager ? {
-    members:         (allProfiles ?? []).length,
-    volunteers:      (allProfiles ?? []).filter(p => p.role === 'volunteer' && p.active).length,
-    pendingSwaps:    pendingSwapCount ?? 0,
-    unassignedSlots: (futureSlots ?? []).filter(s =>
-      s.date >= today &&
-      (allSignups ?? []).filter(sig => sig.slot_id === s.id).length === 0,
-    ).length,
-  } : null
+  // Manager stats.
+  const volunteersActive = (allProfiles ?? []).filter(p => p.role === 'volunteer' && p.active).length
+  const unassignedFuture = (futureSlots ?? []).filter(s => countFor(s.id) === 0).length
+  const unassignedToday = todaySlots.filter(s => countFor(s.id) === 0).length
+  const nextToday = todaySlots.find(s => fmtTime(s.start_time) >= nowHM)
+
+  const stats = [
+    {
+      label: 'Active Volunteers', Icon: IconUsers, value: volunteersActive,
+      href: '/admin/members', alert: false, spark: true,
+      foot: `${(allProfiles ?? []).length} members total`, footUp: false,
+    },
+    {
+      label: 'Services Today', Icon: IconCalendar, value: todaySlots.length,
+      href: '/admin/schedule', alert: false, spark: false,
+      foot: nextToday ? `Next: ${nextToday.duty}` : 'All done for today', footUp: false,
+    },
+    {
+      label: 'Pending Swaps', Icon: IconSwap, value: pendingSwapCount ?? 0,
+      href: '/admin/swaps', alert: false, spark: false,
+      foot: (pendingSwapCount ?? 0) > 0 ? 'Awaiting your review' : 'All clear', footUp: false,
+    },
+    {
+      label: 'Needs Support', Icon: IconHeart, value: unassignedFuture,
+      href: '/admin/schedule', alert: true, spark: false,
+      foot: `${unassignedToday} today`, footUp: false, link: 'Review gaps',
+    },
+  ]
+
+  // Notes & reminders — derived from real signals.
+  type Note = { tone: 'sage' | 'gold' | 'rose'; Icon: IconCmp; title: string; sub: string; href: string }
+  const notes: Note[] = []
+  if (isManager) {
+    if ((pendingSwapCount ?? 0) > 0) notes.push({
+      tone: 'gold', Icon: IconSwap, href: '/admin/swaps',
+      title: `${pendingSwapCount} swap ${pendingSwapCount === 1 ? 'request' : 'requests'} pending`,
+      sub: 'Review and approve volunteer swaps.',
+    })
+    if (unassignedFuture > 0) notes.push({
+      tone: 'rose', Icon: IconUsers, href: '/admin/schedule',
+      title: `${unassignedFuture} ${unassignedFuture === 1 ? 'slot needs' : 'slots need'} a volunteer`,
+      sub: 'Open slots are waiting for cover.',
+    })
+    notes.push({
+      tone: 'sage', Icon: IconLeaf, href: '/admin/members',
+      title: `${volunteersActive} active ${volunteersActive === 1 ? 'volunteer' : 'volunteers'}`,
+      sub: 'Manage your team and roles.',
+    })
+  } else if (!isViewer) {
+    if (myUpcomingAll[0]) notes.push({
+      tone: 'sage', Icon: IconCalendar, href: '/rota',
+      title: `Next duty: ${fmtDate(myUpcomingAll[0].date)}`,
+      sub: `${myUpcomingAll[0].duty} · ${fmtTime(myUpcomingAll[0].start_time)}`,
+    })
+    if (openSlots.length > 0) notes.push({
+      tone: 'gold', Icon: IconLeaf, href: '/rota',
+      title: `${openSlots.length} open ${openSlots.length === 1 ? 'slot' : 'slots'} this week`,
+      sub: 'Sign up to lend a hand.',
+    })
+  }
+  const visibleNotes = notes.slice(0, 3)
+
+  const scheduleHref = isManager ? '/admin/schedule' : '/rota'
 
   return (
-    <div>
-      <PageHeader
-        title={`Good day, ${profile.name.split(' ')[0]}`}
-        subtitle="Your overview for Bodhi Grove Meditation Centre"
-      />
+    <>
+      {/* ── Topbar ───────────────────────────────────────────── */}
+      <header className="topbar">
+        <div>
+          <span className="topbar__greet">
+            {greeting(now)}, {firstName} <Lotus size={18} />
+          </span>
+          <h1 className="topbar__title">Today at Bodhi Grove</h1>
+          <p className="topbar__sub">A calm overview of volunteers, services, and centre support.</p>
+        </div>
+        <div className="topbar__right">
+          <div className="topbar__util">
+            {isManager && (
+              <Link className="iconbtn" href="/admin/swaps" aria-label="Pending swap requests">
+                <IconBell size={20} />
+                {(pendingSwapCount ?? 0) > 0 && <span className="iconbtn__dot" />}
+              </Link>
+            )}
+          </div>
+          <div className="topbar__actions">
+            {isManager ? (
+              <>
+                <Link className="actbtn" href="/admin/schedule/new"><IconPlus size={18} /> Add slot</Link>
+                <Link className="actbtn" href="/admin/schedule"><IconCalEx size={18} /> Schedule</Link>
+                {isAdmin && <Link className="actbtn" href="/admin/members"><IconUsers size={18} /> Volunteers</Link>}
+              </>
+            ) : (
+              <Link className="actbtn" href="/rota"><IconCalendar size={18} /> Browse rota</Link>
+            )}
+          </div>
+        </div>
+      </header>
 
-      <div className="max-w-6xl mx-auto px-5 space-y-8">
+      {/* ── Today's centre rhythm ────────────────────────────── */}
+      <section className="rhythm rise" style={{ ['--d' as string]: '60ms' }}>
+        <div className="rhythm__lead">
+          <Image className="rhythm__leaf" src="/rhythm-leaf.png" alt="" width={88} height={66} />
+          <div className="rhythm__title">
+            <span className="rhythm__title-mark"><Lotus size={26} /></span>
+            Today&apos;s centre rhythm
+          </div>
+        </div>
+        <div className="rhythm__items">
+          {rhythm.length === 0 ? (
+            <p className="rhythm__empty">No services scheduled today — a quiet day at the centre.</p>
+          ) : rhythm.map(r => (
+            <div className="rhythm__item" key={r.id}>
+              <span className={`rhythm__ico${r.gold ? ' rhythm__ico--gold' : ''}`}><r.Icon size={22} /></span>
+              <div>
+                <div className="rhythm__name">{r.name}</div>
+                <div className="rhythm__time">{r.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* Viewer: read-only rota summary */}
-        {isViewer && (
-          <Card className="p-6 text-center space-y-3">
-            <p className="text-ink/60 text-sm">
-              You have viewer access. You can browse the rota but cannot sign up for slots.
-            </p>
+      {/* ── Stat cards (managers) ────────────────────────────── */}
+      {isManager && (
+        <section className="statgrid">
+          {stats.map((s, i) => (
             <Link
-              href="/rota"
-              className="inline-block bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-5 py-2 rounded-md transition-colors"
+              key={s.label}
+              href={s.href}
+              className={`statcard rise${s.alert ? ' statcard--alert' : ''}`}
+              style={{ ['--d' as string]: `${120 + i * 70}ms` }}
             >
-              View this week&apos;s rota →
+              <div className="statcard__top">
+                <span className="statcard__ico"><s.Icon size={22} /></span>
+                <div>
+                  <div className="statcard__label">{s.label}</div>
+                  <div className={`statcard__num${s.alert ? ' statcard__num--alert' : ''}`}>{s.value}</div>
+                </div>
+              </div>
+              <div className="statcard__foot">
+                <span className={`statcard__meta${s.alert ? ' statcard__meta--gold' : s.footUp ? ' statcard__meta--up' : ''}`}>
+                  {s.foot}
+                </span>
+                {s.spark && (
+                  <svg className="statcard__spark" viewBox="0 0 84 30" fill="none" stroke="currentColor"
+                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2 24L14 20L26 22L40 13L54 16L68 7L82 4" />
+                  </svg>
+                )}
+                {s.link && (
+                  <span className="statcard__link">{s.link} <span className="chev"><IconArrowR size={14} /></span></span>
+                )}
+              </div>
             </Link>
-          </Card>
-        )}
+          ))}
+        </section>
+      )}
 
-        {/* Stats row — managers only */}
-        {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: 'Members',          value: stats.members,         Icon: UsersIcon,     href: '/admin/members',  alert: false },
-              { label: 'Active Volunteers',value: stats.volunteers,      Icon: HandshakeIcon, href: '/admin/members',  alert: false },
-              { label: 'Pending Swaps',    value: stats.pendingSwaps,    Icon: SwapIcon,      href: '/admin/swaps',    alert: stats.pendingSwaps > 0 },
-              { label: 'Unassigned Slots', value: stats.unassignedSlots, Icon: ClipboardIcon, href: '/admin/schedule', alert: stats.unassignedSlots > 0 },
-            ].map(s => (
-              <Link
-                key={s.label}
-                href={s.href}
-                className={`bg-white border rounded-xl px-4 py-4 flex items-center gap-3.5 shadow-sm hover:shadow transition-shadow ${
-                  s.alert ? 'border-gold-200' : 'border-sand/70'
-                }`}
-              >
-                <div className={`w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  s.alert
-                    ? 'bg-gold-100 text-gold-700'
-                    : 'bg-sage-50 text-sage-700'
-                }`}>
-                  <s.Icon size={22} />
-                </div>
-                <div className="min-w-0">
-                  <div className={`font-serif font-medium text-[26px] leading-none ${s.alert ? 'text-gold-700' : 'text-ink'}`}>
-                    {s.value}
+      {/* ── Viewer banner ────────────────────────────────────── */}
+      {isViewer && (
+        <section className="viewer-note rise" style={{ ['--d' as string]: '120ms' }}>
+          <p>You have viewer access. You can browse the rota but cannot sign up for slots.</p>
+          <Link href="/rota">View this week&apos;s rota <IconArrowR size={16} /></Link>
+        </section>
+      )}
+
+      {/* ── Schedule + my duties ─────────────────────────────── */}
+      {isViewer ? (
+        <section className="rise" style={{ ['--d' as string]: '200ms', marginTop: 'calc(20px * var(--space))' }}>
+          <SchedulePanel rows={scheduleRows} href={scheduleHref} />
+        </section>
+      ) : (
+        <section className="contentgrid">
+          <div className="rise" style={{ ['--d' as string]: '420ms' }}>
+            <SchedulePanel rows={scheduleRows} href={scheduleHref} />
+          </div>
+
+          <div className="panel rise" style={{ ['--d' as string]: '500ms' }}>
+            <div className="panel__head">
+              <div className="panel__titlewrap">
+                <IconClipCheck size={22} />
+                <h2 className="panel__title">My Upcoming Duties</h2>
+              </div>
+              <Link className="panel__action" href="/rota">View rota</Link>
+            </div>
+            {myUpcoming.length === 0 ? (
+              <p className="timeline__empty">No duties on your schedule yet. Browse open slots to pick one up.</p>
+            ) : (
+              <div>
+                {myUpcoming.map(s => (
+                  <div className="annrow" key={s.id}>
+                    <span className="annrow__ico"><IconCalendar size={20} /></span>
+                    <div>
+                      <div className="annrow__title">{s.duty}</div>
+                      <div className="annrow__body">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</div>
+                      <div className="annrow__date">{fmtDate(s.date)}</div>
+                    </div>
                   </div>
-                  <div className="text-[13px] text-ink/75 mt-1.5 leading-tight">{s.label}</div>
-                </div>
+                ))}
+                {myUpcomingMore > 0 && (
+                  <p className="timeline__foot">and {myUpcomingMore} more — view the full rota.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Notes & reminders ────────────────────────────────── */}
+      {visibleNotes.length > 0 && (
+        <section className="notes panel rise" style={{ ['--d' as string]: '580ms' }}>
+          <div className="panel__head">
+            <div className="panel__titlewrap">
+              <IconClipCheck size={22} />
+              <h2 className="panel__title">Notes &amp; reminders</h2>
+            </div>
+          </div>
+          <div className="notegrid">
+            {visibleNotes.map(n => (
+              <Link className={`notecard notecard--${n.tone}`} key={n.title} href={n.href}>
+                <span className="notecard__ico"><n.Icon size={21} /></span>
+                <span className="notecard__body">
+                  <span className="notecard__title">{n.title}</span>
+                  <span className="notecard__sub">{n.sub}</span>
+                </span>
+                <span className="notecard__chev"><IconChevR size={18} /></span>
               </Link>
             ))}
           </div>
-        )}
+        </section>
+      )}
+    </>
+  )
+}
 
-        {/* Two-column section — not shown to viewers. items-start so an empty
-            card on either side doesn't stretch to match its sibling's height. */}
-        {!isViewer && (
-          <div className="grid lg:grid-cols-2 gap-6 lg:items-start">
-            {/* My upcoming duties */}
-            {myUpcoming.length === 0 ? (
-              <EmptyState
-                title="You're all caught up"
-                body="No duties on your schedule yet. Browse open slots if you'd like to pick one up."
-                cta={
-                  <Link
-                    href="/rota"
-                    className="inline-block text-sm font-medium border border-sage-300 text-sage-800 bg-sage-50 hover:bg-sage-600 hover:text-white hover:border-sage-600 rounded-md px-4 py-2 transition-colors"
-                  >
-                    Browse open slots
-                  </Link>
-                }
-              />
-            ) : (
-              <Card clip>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
-                  <h2 className="font-serif text-lg font-medium text-ink">My Upcoming Duties</h2>
-                  <Link href="/rota" className="text-xs text-sage-700 hover:underline">View rota →</Link>
-                </div>
-                <ul className="divide-y divide-sand/40">
-                  {myUpcoming.map(s => (
-                    <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                      <span className="text-xs font-semibold text-sage-700 uppercase tracking-wide w-16 flex-shrink-0">
-                        {fmtDate(s.date)}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-ink">{s.duty}</p>
-                        <p className="text-xs text-ink/45">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                {myUpcomingMore > 0 && (
-                  <div className="px-5 py-3 border-t border-sand/40">
-                    <Link href="/rota" className="text-xs text-sage-700 hover:underline">
-                      and {myUpcomingMore} more → View rota
-                    </Link>
-                  </div>
-                )}
-              </Card>
-            )}
+function greeting(now: Date): string {
+  const h = now.getHours()
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+}
 
-            {/* Open slots */}
-            <Card clip>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-sand/60">
-                <h2 className="font-serif text-lg font-medium text-ink">Open Slots — Next 7 Days</h2>
-                <Link href="/rota" className="text-xs text-sage-700 hover:underline">Sign up →</Link>
-              </div>
-              {openSlots.length === 0 ? (
-                <div className="px-5 py-8 text-center text-ink/45 text-sm">
-                  All upcoming slots are filled.
-                </div>
-              ) : (
-                <ul className="divide-y divide-sand/40">
-                  {openSlots.map(s => (
-                    <li key={s.id} className="flex items-center gap-3 px-5 py-3">
-                      <span className="text-xs font-semibold text-sage-700 uppercase tracking-wide w-16 flex-shrink-0">
-                        {fmtDate(s.date)}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-ink">{s.duty}</p>
-                        <p className="text-xs text-ink/45">{fmtTime(s.start_time)}–{fmtTime(s.end_time)} · {s.location}</p>
-                      </div>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        s.spotsLeft === 1 ? 'bg-gold-100 text-gold-700' : 'bg-sage-100 text-sage-700'
-                      }`}>
-                        {s.spotsLeft} left
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          </div>
-        )}
-
-        {/* Quick actions — managers only */}
-        {isManager && (
-          <section>
-            <h2 className="font-serif text-xl font-medium mb-4 text-ink">Quick Actions</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { href: '/admin/schedule/new', Icon: PlusIcon,     label: 'Add Rota Slot'     },
-                { href: '/admin/schedule',     Icon: CalendarIcon, label: 'Manage Schedule'   },
-                ...(profile.role === 'admin' ? [
-                  { href: '/admin/members/new', Icon: UserPlusIcon, label: 'Add Member'        },
-                  { href: '/admin/members',     Icon: UsersIcon,    label: 'Manage Members'    },
-                ] : []),
-              ].map(a => (
-                <Link
-                  key={a.href} href={a.href}
-                  className="relative bg-white border border-sand/70 rounded-xl px-5 py-4 flex items-center gap-3.5 shadow-sm hover:shadow hover:border-mist/70 transition-all group"
-                >
-                  <span className="w-10 h-10 rounded-lg bg-sage-50 text-sage-700 flex items-center justify-center flex-shrink-0 group-hover:bg-sage-100 transition-colors">
-                    <a.Icon size={22} />
-                  </span>
-                  <span className="text-sm font-medium text-ink/85 group-hover:text-ink leading-tight flex-1">{a.label}</span>
-                  <span className="text-ink/30 group-hover:text-sage-700 group-hover:translate-x-0.5 transition-all">→</span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+function SchedulePanel({
+  rows,
+  href,
+}: {
+  rows: { id: string; start: string; end: string; duty: string; location: string; status: SlotStatus }[]
+  href: string
+}) {
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__titlewrap">
+          <IconCalendar size={22} />
+          <h2 className="panel__title">Today&apos;s Schedule</h2>
+        </div>
+        <Link className="panel__action" href={href}>View schedule</Link>
       </div>
+      {rows.length === 0 ? (
+        <p className="timeline__empty">No services scheduled for today.</p>
+      ) : (
+        <div className="timeline">
+          {rows.map(row => {
+            const p = PILL[row.status]
+            return (
+              <div className={`tlrow${row.status === 'alert' ? ' tlrow--alert' : ''}`} key={row.id}>
+                <div className="tlrow__time">{row.start}</div>
+                <div className="tlrow__rail">
+                  <span className={`tlrow__dot${p.dot ? ` tlrow__dot--${p.dot}` : ''}`} />
+                </div>
+                <div>
+                  <div className="tlrow__duty">{row.duty}</div>
+                  <div className="tlrow__loc">{row.location}</div>
+                </div>
+                <span className={`tlpill tlpill--${row.status}`}><p.Icon size={13} /> {p.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <p className="timeline__foot">All times shown in your local timezone.</p>
     </div>
   )
 }
