@@ -337,6 +337,14 @@ export default function LoginForm() {
         ))}
       </div>
 
+      <p className="demos__hint">
+        One tap signs you in — or use the password{' '}
+        <code className="demos__pass">{DEMO_PASS}</code> with any account below.
+      </p>
+      <p className="demos__emails">
+        {DEMO_ACCOUNTS.map(d => d.email).join('  ·  ')}
+      </p>
+
       <div className="card__foot">
         <span className="card__foot-lotus"><Lotus size={16} /></span>
         <p className="card__credit">
