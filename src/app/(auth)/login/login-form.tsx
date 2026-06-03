@@ -200,11 +200,11 @@ export default function LoginForm() {
     <div className="card">
       <div className="card__head">
         <span className="card__lotus"><Lotus size={34} /></span>
-        <h1 className="card__title">Welcome back</h1>
+        <h1 className="card__title">Sign in to Sangha Rota</h1>
         <p className="card__sub">
           {mode === 'magic'
             ? "We'll email you a one-tap sign-in link."
-            : 'Sign in to manage volunteer service.'}
+            : 'Access the rota dashboard, volunteer signups, shift swaps, and admin tools.'}
         </p>
       </div>
 
