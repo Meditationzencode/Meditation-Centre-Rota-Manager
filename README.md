@@ -55,9 +55,9 @@ This project demonstrates production-style full-stack development: authenticatio
 
 ## Screenshots
 
-| Home | Login |
-|------|-------|
-| ![Home](public/screenshots/home.png) | ![Login](public/screenshots/login.png) |
+| Login |
+|-------|
+| ![Login](public/screenshots/login.png) |
 
 | Dashboard | Profile |
 |-----------|---------|
