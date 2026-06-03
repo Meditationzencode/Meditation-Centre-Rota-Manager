@@ -82,7 +82,7 @@ export default function RotaGrid({ days, weekStart, isManager, canSignUp, today 
                 {dateLabel}
               </div>
             </div>
-            <div className={`flex-1 border border-t-0 rounded-b-lg p-1.5 space-y-1.5 min-h-[80px] ${
+            <div className={`flex-1 border border-t-0 rounded-b-lg p-1.5 space-y-2 min-h-[80px] shadow-sm ${
               isToday ? 'border-sage-300 bg-sage-50/30' : 'border-sand/60 bg-white'
             }`}>
               {day.slots.length === 0 ? (
@@ -140,7 +140,7 @@ function SlotCard({
   const swapSubmitted = swapState && 'success' in swapState
 
   return (
-    <div className={`border-l-[3px] ${leftAccent} border rounded-md p-1.5 text-[11px] transition-colors ${statusBg}`}>
+    <div className={`group/card border-l-[3px] ${leftAccent} border rounded-md p-1.5 text-[11px] shadow-sm transition-all hover:shadow-md ${statusBg}`}>
       <div className="flex items-center justify-between mb-0.5">
         <span className="text-ink/45 font-medium">{fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}</span>
         <span className={`font-semibold px-1 py-0.5 rounded text-[10px] ${
@@ -181,8 +181,8 @@ function SlotCard({
         <p className="text-ink/45 italic mt-1 text-[10px]">{slot.notes}</p>
       )}
 
-      {/* Actions */}
-      <div className="flex gap-1 mt-1.5 flex-wrap">
+      {/* Actions — revealed on hover/focus in the dense desktop grid, always shown on smaller screens */}
+      <div className="flex gap-1 mt-1.5 flex-wrap transition-opacity lg:opacity-0 lg:group-hover/card:opacity-100 lg:group-focus-within/card:opacity-100">
         {canSignUp && (
           slot.mySignup ? (
             <>
