@@ -122,7 +122,7 @@ export default async function DashboardPage() {
       foot: (pendingSwapCount ?? 0) > 0 ? 'Awaiting your review' : 'All clear', footUp: false,
     },
     {
-      label: 'Needs Support', Icon: IconHeart, value: unassignedFuture,
+      label: 'Unfilled Slots', Icon: IconHeart, value: unassignedFuture,
       href: '/admin/schedule', alert: true, spark: false,
       foot: `${unassignedToday} today`, footUp: false, link: 'Review gaps',
     },

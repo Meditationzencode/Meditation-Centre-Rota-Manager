@@ -32,6 +32,14 @@ export default function SlotForm({ slot }: Props) {
     >
       {slot && <input type="hidden" name="id" value={slot.id} />}
 
+      {!slot && (
+        <p className="text-sm text-ink/55 -mt-1">
+          Create a one-off rota slot. Use{' '}
+          <Link href="/admin/schedule/recurring" className="text-sage-700 hover:underline">Recurring Schedule</Link>{' '}
+          for repeated weekly duties.
+        </p>
+      )}
+
       {error && (
         <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3">{error}</div>
       )}
@@ -73,6 +81,7 @@ export default function SlotForm({ slot }: Props) {
           <label htmlFor="slot-max" className={labelCls}>Max Volunteers <span className="text-red-500">*</span></label>
           <input id="slot-max" type="number" name="maxVolunteers" min={1} max={20} required
             defaultValue={slot?.max_volunteers ?? 1} className={fieldCls} />
+          <p className="text-xs text-ink/50 mt-1.5">Set this higher for group duties such as garden maintenance.</p>
         </div>
       </div>
 
