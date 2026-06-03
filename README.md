@@ -55,41 +55,59 @@ This project demonstrates production-style full-stack development: authenticatio
 
 ## Screenshots
 
-| Login |
-|-------|
-| ![Login](public/screenshots/login.png) |
+The six screens below cover the core of the app; the rest are tucked under **View more** to keep this section skimmable.
 
-| Dashboard | Profile |
-|-----------|---------|
-| ![Dashboard](public/screenshots/dashboard.png) | ![Profile](public/screenshots/profile.png) |
+| **Admin dashboard** | **Weekly rota** |
+|---|---|
+| ![Admin dashboard](public/screenshots/dashboard.png) | ![Weekly rota](public/screenshots/rota-weekly.png) |
+| At-a-glance stat cards: active volunteers, services today, pending swaps, and slots needing support. | Interactive scheduling — duty times, locations, sign-up counts, and one-click sign-up / cancel via Server Actions. |
 
-| Weekly rota | Monthly rota |
-|-------------|--------------|
-| ![Weekly rota](public/screenshots/rota-weekly.png) | ![Monthly rota](public/screenshots/rota-monthly.png) |
+| **Login** | **Swap requests** |
+|---|---|
+| ![Login](public/screenshots/login.png) | ![Swap requests](public/screenshots/admin-swaps.png) |
+| Supabase Auth with one-click demo accounts for admin, coordinator, and volunteer. | Admin review flow for approving or rejecting volunteer shift swaps, with a full audit trail. |
 
-| Shift detail | Create shift |
-|--------------|--------------|
+| **Member management** | **Mobile rota** |
+|---|---|
+| ![Member management](public/screenshots/admin-members.png) | ![Mobile rota](public/screenshots/mobile-rota.png) |
+| Role-based access control — create accounts and assign roles (admin, coordinator, volunteer, viewer). | Responsive layout for checking and managing duties on small screens. |
+
+<details>
+<summary><strong>View more screenshots</strong></summary>
+
+<br />
+
+| **Profile** | **Monthly rota** |
+|---|---|
+| ![Profile](public/screenshots/profile.png) | ![Monthly rota](public/screenshots/rota-monthly.png) |
+| Personal details, password change, unavailability, and calendar (.ics) export. | Month-at-a-glance grid of every scheduled duty. |
+
+| **Shift detail** | **Create shift** |
+|---|---|
 | ![Shift detail](public/screenshots/slot-detail.png) | ![Create shift](public/screenshots/create-slot.png) |
+| Slot capacity, current sign-ups, and sign-up / edit actions. | Validated Server Action form for adding one-off slots. |
 
-| Edit shift | Recurring schedule |
-|------------|--------------------|
+| **Edit shift** | **Recurring schedule** |
+|---|---|
 | ![Edit shift](public/screenshots/edit-slot.png) | ![Recurring schedule](public/screenshots/admin-schedule-recurring.png) |
+| Update a slot's time, location, capacity, and status. | Weekly templates that generate slots across a date range. |
 
-| Member management | Edit member |
-|-------------------|-------------|
-| ![Members](public/screenshots/admin-members.png) | ![Edit member](public/screenshots/edit-member.png) |
+| **Edit member** | **Add member** |
+|---|---|
+| ![Edit member](public/screenshots/edit-member.png) | ![Add member](public/screenshots/admin-members-new.png) |
+| Change a member's role, status, and details. | Create a new account with an assigned role. |
 
-| Swap requests | Activity log |
-|---------------|--------------|
-| ![Swaps](public/screenshots/admin-swaps.png) | ![Activity](public/screenshots/admin-activity.png) |
+| **Activity log** | **Member availability** |
+|---|---|
+| ![Activity log](public/screenshots/admin-activity.png) | ![Member availability](public/screenshots/admin-availability.png) |
+| Audit trail of key user and admin actions — accountability and admin visibility. | Admin view of volunteer-submitted unavailability. |
 
-| Member availability | Add member |
-|---------------------|------------|
-| ![Availability](public/screenshots/admin-availability.png) | ![Add member](public/screenshots/admin-members-new.png) |
+| **Mobile dashboard** | **Mobile monthly rota** |
+|---|---|
+| ![Mobile dashboard](public/screenshots/mobile-dashboard.png) | ![Mobile monthly rota](public/screenshots/mobile-monthly.png) |
+| Responsive dashboard across mobile breakpoints. | Month grid adapted for mobile screens. |
 
-| Mobile dashboard | Mobile rota |
-|------------------|-------------|
-| ![Mobile dashboard](public/screenshots/mobile-dashboard.png) | ![Mobile rota](public/screenshots/mobile-rota.png) |
+</details>
 
 ---
 
