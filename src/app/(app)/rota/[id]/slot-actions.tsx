@@ -98,10 +98,11 @@ export default function SlotActions({
         <form action={swapAction} className="space-y-3" onSubmit={() => setShowSwapForm(false)}>
           <input type="hidden" name="slotId" value={slotId} />
           <div>
-            <label className="block text-sm font-medium text-ink/80 mb-1">
+            <label htmlFor="swap-reason" className="block text-sm font-medium text-ink/80 mb-1">
               Reason for swap <span className="text-ink/45 font-normal">(optional)</span>
             </label>
             <textarea
+              id="swap-reason"
               name="reason"
               rows={3}
               className="w-full text-sm border border-sand rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-mist"

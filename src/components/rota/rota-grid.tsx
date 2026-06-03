@@ -267,6 +267,7 @@ function SlotCard({
           <textarea
             name="reason"
             placeholder="Reason (optional)"
+            aria-label="Reason for swap (optional)"
             rows={2}
             className="w-full text-[10px] border border-sand rounded px-1.5 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-mist"
           />

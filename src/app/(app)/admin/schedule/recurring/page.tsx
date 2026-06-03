@@ -85,13 +85,13 @@ export default async function RecurringPage({
           <h2 className="font-serif text-lg font-medium mb-4 text-ink">Generate Slots</h2>
           <form action={generateSlots} className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-sm font-medium text-ink/75 mb-1">From</label>
-              <input type="date" name="from" required
+              <label htmlFor="generate-from" className="block text-sm font-medium text-ink/75 mb-1">From</label>
+              <input id="generate-from" type="date" name="from" required
                 className="border border-sand rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-mist" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink/75 mb-1">To</label>
-              <input type="date" name="to" required
+              <label htmlFor="generate-to" className="block text-sm font-medium text-ink/75 mb-1">To</label>
+              <input id="generate-to" type="date" name="to" required
                 className="border border-sand rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-mist" />
             </div>
             <button type="submit"
