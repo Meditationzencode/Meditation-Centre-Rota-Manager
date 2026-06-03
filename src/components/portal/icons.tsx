@@ -107,6 +107,14 @@ export const IconChevR = ({ size = 18, sw = 1.8, className }: Props) => (
   <Svg size={size} sw={sw} className={className}><path d="M9 5l7 7-7 7" /></Svg>
 )
 
+/* ---- mobile nav ---- */
+export const IconMenu = (p: Props) => (
+  <Svg {...p}><path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" /></Svg>
+)
+export const IconX = (p: Props) => (
+  <Svg {...p}><path d="M6 6l12 12" /><path d="M18 6L6 18" /></Svg>
+)
+
 // Hand-drawn lotus mark (five petals + waterline) — shared with the login scene.
 export const Lotus = ({ size = 28 }: { size?: number }) => (
   <svg viewBox="0 0 64 56" width={size} height={(size * 56) / 64}

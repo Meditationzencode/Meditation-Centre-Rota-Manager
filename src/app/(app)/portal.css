@@ -65,6 +65,9 @@
   border-right: 1px solid var(--sand);
   overflow: hidden;
 }
+
+/* Mobile-only nav chrome — hidden on desktop, activated in the ≤860px block below */
+.mobilebar, .side-backdrop, .side__close { display: none; }
 .side__brand {
   display: flex; flex-direction: column; align-items: center; text-align: center;
   gap: 12px; padding: calc(28px * var(--space)) 24px calc(22px * var(--space));
@@ -419,39 +422,65 @@
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
 
-  /* Sidebar becomes a sticky top bar.
-     Row 1: brand (left) + compact sign-out (right).
-     Row 2: full-width, horizontally scrollable nav. */
+  /* Sticky top bar with brand + hamburger */
+  .mobilebar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--surface) 88%, var(--cream));
+    border-bottom: 1px solid var(--sand);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .mobilebar__brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .mobilebar__mark {
+    width: 36px; height: 36px; border-radius: 999px; flex: none; display: grid; place-items: center;
+    color: var(--sage-deep); border: 1.5px solid color-mix(in srgb, var(--sage-deep) 36%, transparent);
+  }
+  .mobilebar__name {
+    font-weight: 600; font-size: 14px; letter-spacing: .18em; text-transform: uppercase; color: var(--sage-deep);
+  }
+  .mobilebar__toggle {
+    width: 44px; height: 44px; border-radius: var(--r-md); flex: none; display: grid; place-items: center;
+    color: var(--ink-soft); background: var(--surface); border: 1px solid var(--sand);
+    transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .mobilebar__toggle:hover { color: var(--sage-deep); border-color: var(--sage-soft); }
+
+  /* Dimmed backdrop behind the open drawer */
+  .side-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 40;
+    background: color-mix(in srgb, var(--ink) 42%, transparent);
+    opacity: 0; pointer-events: none; transition: opacity var(--dur) var(--ease);
+  }
+  .side-backdrop--show { opacity: 1; pointer-events: auto; }
+
+  /* Sidebar becomes an off-canvas drawer */
   .side {
-    position: sticky; top: 0; z-index: 20; height: auto;
-    flex-direction: row; flex-wrap: wrap; align-items: center;
-    border-right: none; border-bottom: 1px solid var(--sand);
+    position: fixed; top: 0; left: 0; z-index: 50;
+    height: 100vh; width: min(82vw, 300px);
+    flex-direction: column; overflow-y: auto;
+    border-right: 1px solid var(--sand); border-bottom: none;
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-100%);
+    transition: transform var(--dur) var(--ease);
   }
-  .side__brand { order: 1; flex: 1; min-width: 0; flex-direction: row; gap: 10px; padding: 12px 14px; }
-  .side__brand-mark { width: 38px; height: 38px; }
-  .side__brand-sub { display: none; }
+  .side--open { transform: none; }
 
-  /* Compact user area on row 1: hide the full user link, keep a small sign-out. */
-  .side__userwrap {
-    order: 2; flex: none; display: flex; align-items: center;
-    border-top: none; background: none;
+  .side__close {
+    display: grid; place-items: center; position: absolute; top: 12px; right: 12px;
+    width: 38px; height: 38px; border-radius: var(--r-md);
+    color: var(--ink-muted); background: transparent; border: 1px solid transparent;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
   }
-  .side__user { display: none; }
-  .side__signout { width: auto; margin: 0 12px 0 0; padding: 8px 15px; }
+  .side__close:hover { color: var(--sage-deep); background: var(--sage-tint); }
 
-  .side__nav {
-    order: 3; flex-basis: 100%; width: 100%;
-    flex-direction: row; flex-wrap: nowrap; gap: 4px;
-    padding: 8px 10px; overflow-x: auto;
-    border-top: 1px solid var(--sand-soft);
-    -webkit-overflow-scrolling: touch; scrollbar-width: none;
-  }
-  .side__nav::-webkit-scrollbar { display: none; }
-  .navitem { flex: none; width: auto; white-space: nowrap; padding: 9px 12px; }
-  .navitem--active::before { display: none; }
-
+  .side__userwrap { margin-top: auto; }
   .side__leaf { display: none; }
 
   .topbar__title { white-space: normal; }
   .statgrid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side, .side-backdrop { transition: none; }
 }

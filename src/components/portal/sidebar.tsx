@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { logout } from '@/lib/actions'
 import type { Profile } from '@/lib/types'
 import {
   Lotus, IconHome, IconCalendar, IconCalEx, IconUsers, IconBook,
-  IconSwap, IconChart, IconGear, IconChevD,
+  IconSwap, IconChart, IconGear, IconChevD, IconMenu, IconX,
   type IconComponent,
 } from './icons'
 
@@ -25,8 +26,18 @@ export default function Sidebar({
   pendingSwaps?: number
 }) {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
   const isManager = profile.role === 'admin' || profile.role === 'coordinator'
   const isAdmin = profile.role === 'admin'
+
+  // Close the mobile drawer on navigation and on Escape.
+  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
 
   const nav: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', Icon: IconHome },
@@ -45,8 +56,43 @@ export default function Sidebar({
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)
 
   return (
-    <aside className="side">
-      <Link className="side__brand" href="/dashboard">
+    <>
+      {/* Mobile top bar — shown only ≤860px (see portal.css) */}
+      <div className="mobilebar">
+        <Link className="mobilebar__brand" href="/dashboard">
+          <span className="mobilebar__mark"><Lotus size={26} /></span>
+          <span className="mobilebar__name">Bodhi Grove</span>
+        </Link>
+        <button
+          type="button"
+          className="mobilebar__toggle"
+          aria-label="Open menu"
+          aria-expanded={open}
+          aria-controls="app-nav"
+          onClick={() => setOpen(true)}
+        >
+          <IconMenu size={22} />
+        </button>
+      </div>
+
+      {/* Drawer backdrop (mobile) */}
+      <div
+        className={`side-backdrop${open ? ' side-backdrop--show' : ''}`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside id="app-nav" className={`side${open ? ' side--open' : ''}`}>
+        <button
+          type="button"
+          className="side__close"
+          aria-label="Close menu"
+          onClick={() => setOpen(false)}
+        >
+          <IconX size={20} />
+        </button>
+
+        <Link className="side__brand" href="/dashboard">
         <span className="side__brand-mark"><Lotus size={34} /></span>
         <span>
           <span className="side__brand-name">Bodhi Grove</span>
@@ -99,6 +145,7 @@ export default function Sidebar({
           <button type="submit" className="side__signout">Sign out</button>
         </form>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
