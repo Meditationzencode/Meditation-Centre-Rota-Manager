@@ -28,8 +28,21 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
+
+  // The root path is a redirect-only entry point: send visitors straight to
+  // login, or to their dashboard if they already have a session.
+  if (pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = user ? '/dashboard' : '/login'
+    const redirectResponse = NextResponse.redirect(url)
+    // Forward any refreshed session cookies to the redirect response
+    supabaseResponse.cookies.getAll().forEach(c =>
+      redirectResponse.cookies.set(c.name, c.value, c as Parameters<typeof redirectResponse.cookies.set>[2]),
+    )
+    return redirectResponse
+  }
+
   const isPublic =
-    pathname === '/' ||
     pathname === '/login' ||
     pathname === '/forgot-password' ||
     pathname === '/reset-password' ||

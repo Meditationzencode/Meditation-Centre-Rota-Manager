@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { loginAs, logout } from './helpers'
 
-test.describe('Home page', () => {
-  test('is publicly accessible without login', async ({ page }) => {
+test.describe('Home redirect', () => {
+  test('redirects unauthenticated visitors to /login', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveTitle(/Sangha Rota/)
-    await expect(page.getByRole('heading', { name: /volunteer rota/i })).toBeVisible()
+    await expect(page).toHaveURL(/\/login/, { timeout: 8_000 })
   })
 
-  test('shows Login button for unauthenticated visitors', async ({ page }) => {
+  test('redirects authenticated visitors to their dashboard', async ({ page }) => {
+    await loginAs(page, 'admin')
     await page.goto('/')
-    await expect(page.getByRole('link', { name: /login/i }).first()).toBeVisible()
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 8_000 })
   })
 })
 

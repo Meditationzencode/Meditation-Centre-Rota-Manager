@@ -15,7 +15,6 @@ const PROTECTED_ROUTES = [
 ]
 
 const PUBLIC_ROUTES = [
-  '/',
   '/login',
   '/forgot-password',
 ]
