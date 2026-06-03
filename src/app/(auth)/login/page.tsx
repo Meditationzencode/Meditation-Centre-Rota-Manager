@@ -45,9 +45,7 @@ export default function LoginPage() {
             Manage volunteer service with<br />clarity and compassion.
           </p>
           <div className="hero__chips reveal" style={{ ['--d' as string]: '480ms' }}>
-            <span>Scheduling</span><span className="hero__sep" />
-            <span>Volunteers</span><span className="hero__sep" />
-            <span>Service</span>
+            <span>Volunteer Scheduling</span>
           </div>
         </div>
 
