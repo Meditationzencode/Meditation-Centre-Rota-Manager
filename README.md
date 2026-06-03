@@ -27,7 +27,15 @@ All data is entirely fictional — no real organisation information is included.
 
 ---
 
+## For employers
+
+This project demonstrates production-style full-stack development: authentication, role-based access control, PostgreSQL schema design, Row-Level Security, server-side mutations with Next.js Server Actions, responsive UI, automated Playwright testing, deployment, and clear technical documentation.
+
+---
+
 ## Table of contents
+
+- [For employers](#for-employers)
 
 - [Screenshots](#screenshots)
 - [Try the live demo](#try-the-live-demo)
@@ -92,6 +100,8 @@ All data is entirely fictional — no real organisation information is included.
 | Admin | `admin@bodhigrove.demo` | `Demo1234!` |
 | Coordinator | `coord1@bodhigrove.demo` | `Demo1234!` |
 | Volunteer | `vol1@bodhigrove.demo` | `Demo1234!` |
+
+Demo data is fictional and can be safely modified; the seeded dataset can be recreated locally with `npm run setup`.
 
 ---
 
