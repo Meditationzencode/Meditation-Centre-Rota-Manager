@@ -479,6 +479,13 @@
 
   .topbar__title { white-space: normal; }
   .statgrid { grid-template-columns: 1fr; }
+
+  /* Header actions: let the right column fill the row so buttons wrap
+     instead of overflowing / cutting off on narrow screens. */
+  .topbar__right { width: 100%; align-items: stretch; }
+  .topbar__util { justify-content: flex-end; }
+  .topbar__actions { width: 100%; justify-content: flex-start; }
+  .actbtn { flex: 1 1 auto; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
