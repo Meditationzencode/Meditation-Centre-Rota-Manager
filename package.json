@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:e2e": "node scripts/dev-e2e.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "setup": "node --env-file=.env.local scripts/setup.mjs",
+    "setup:e2e": "node --env-file=.env.test.local scripts/setup.mjs",
     "test": "playwright test",
-    "test:unit": "playwright test tests/unit",
+    "test:e2e": "playwright test",
+    "test:unit": "playwright test -c playwright.unit.config.ts",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report"
   },

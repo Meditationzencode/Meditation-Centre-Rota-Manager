@@ -387,20 +387,35 @@ Key tested areas:
 
 Most specs drive a real browser against the running app. The RLS suite ([`tests/rls.spec.ts`](tests/rls.spec.ts)) is different: it queries Postgres directly with the **anon key — the same key shipped in the browser bundle** — to prove that even a request crafted in DevTools, bypassing middleware and Server Actions entirely, cannot read another user's data or let a volunteer escalate their own role. This verifies the database is the ultimate authority, not just the application code.
 
-### Prerequisites
+### Unit tests
 
-The tests hit `http://localhost:3000` by default, so the dev server must be running:
+The pure-logic suite (validation, scheduling) needs no browser, server, or database. This is what CI runs:
 
 ```bash
-npm run dev
+npm run test:unit
 ```
 
-The demo accounts must also exist in your Supabase project — run `npm run setup` to create them.
+### End-to-end tests
 
-### Commands
+The E2E suite drives a real browser and **creates and deletes real rows**, so it runs against an **isolated, throwaway Supabase project — never the live demo**. `npm test` is fail-closed: it refuses to start unless a separate test project is configured, and it boots its own dev server on a dedicated port so a prod-connected `npm run dev` can't be hit by accident.
+
+One-time setup:
+
+1. Create a second (free) Supabase project.
+2. Run the `supabase/*.sql` migrations in its SQL editor (same order as the demo).
+3. Copy the env template and fill in the **test** project's keys:
+   ```bash
+   cp .env.test.local.example .env.test.local
+   ```
+4. Seed the demo users into the test project:
+   ```bash
+   npm run setup:e2e
+   ```
+
+Then run the suite — no need to start `npm run dev` first:
 
 ```bash
-npm test              # headless, all tests (single worker)
+npm test              # full E2E suite (isolated project, single worker)
 npm run test:ui       # interactive Playwright UI
 npm run test:report   # view the last HTML report
 ```
@@ -442,7 +457,7 @@ Coming from older React tutorials, my instinct was to write `/api/signups/route.
 - **Multi-centre support** — namespace slots, members, and templates under separate organisations
 - **Shift notes from volunteers** — free-text field volunteers fill in after completing a shift
 - **Recurring unavailability** — mark a recurring day (e.g. every Tuesday) rather than individual dates
-- **Expand CI coverage** — add full Playwright E2E runs against a seeded Supabase test environment on pull requests (CI currently runs typecheck, lint, build, and the fast unit suite)
+- **Run the E2E suite in CI** — the suite already runs against an isolated, throwaway Supabase project locally (`.env.test.local`); the remaining work is provisioning that project in CI so the full Playwright run executes on pull requests (CI currently runs typecheck, lint, build, and the fast unit suite)
 
 ---
 
