@@ -19,7 +19,7 @@ Built as a portfolio project to demonstrate full-stack engineering end-to-end â€
 **By the numbers:**
 - **7 PostgreSQL tables** with Row-Level Security on every one
 - **4 user roles** with three independent layers of access control (database, middleware, server actions)
-- **54 Playwright tests** covering auth, permissions, CRUD, the full swap lifecycle, and Row-Level Security enforced directly at the database
+- **74 Playwright tests** covering auth, permissions, CRUD, the full swap lifecycle, and Row-Level Security enforced directly at the database
 - **18+ screens** across desktop and mobile breakpoints, all captured below
 - **Deployed live on Vercel** â€” try it without cloning a thing
 
