@@ -85,7 +85,7 @@ export default async function ProfilePage() {
             </a>
           </div>
           {upcoming.length === 0 ? (
-            <div className="px-5 py-8 text-center text-ink/40 text-sm">No upcoming sign-ups.</div>
+            <div className="px-5 py-8 text-center text-ink/40 text-sm">No upcoming sign-ups yet — visit the rota to claim an open shift.</div>
           ) : (
             <ul className="divide-y divide-sand/40">
               {upcoming.map(s => {

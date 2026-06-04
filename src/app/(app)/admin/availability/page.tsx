@@ -56,8 +56,8 @@ export default async function AdminAvailabilityPage() {
       <div className="max-w-4xl mx-auto px-5 space-y-4 pb-12">
         {members.length === 0 ? (
           <EmptyState
-            title="No unavailability submitted"
-            body="When volunteers mark dates they can't cover, you'll see them here while you build the schedule."
+            title="No unavailable members"
+            body="All active volunteers are currently available — nothing is blocking the schedule right now."
           />
         ) : members.map(([userId, { name, role, dates }]) => (
           <Card key={userId} clip>

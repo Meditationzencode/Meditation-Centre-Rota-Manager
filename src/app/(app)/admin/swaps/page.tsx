@@ -106,8 +106,16 @@ export default async function SwapsPage({
 
         {shown.length === 0 ? (
           <EmptyState
-            title={`No ${filter === 'all' ? '' : filter} requests`}
-            body="Volunteer swap requests will appear here for you to review."
+            title={
+              filter === 'pending' ? 'No pending swap requests'
+              : filter === 'all' ? 'No swap requests yet'
+              : `No ${filter} requests`
+            }
+            body={
+              filter === 'pending'
+                ? 'All volunteer swap requests have been reviewed.'
+                : 'Volunteer swap requests will appear here as they come in.'
+            }
           />
         ) : (
           <Card clip>
