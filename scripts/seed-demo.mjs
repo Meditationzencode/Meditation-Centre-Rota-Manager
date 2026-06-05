@@ -28,7 +28,7 @@ const supabase = createClient(URL, KEY, { auth: { persistSession: false } })
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 const WEEKS_BACK = 1          // weeks of history
-const WEEKS_FWD = 1           // upcoming weeks (besides the current one)
+const WEEKS_FWD = 4           // upcoming weeks (~a month of shifts in advance)
 const ALL = '00000000-0000-0000-0000-000000000000'
 
 // Weekly duty pattern (day: 0=Mon … 6=Sun)
