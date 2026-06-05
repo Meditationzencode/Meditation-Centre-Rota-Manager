@@ -1,0 +1,35 @@
+name: Keepalive
+
+# GitHub disables scheduled workflows after 60 days with no repository commits.
+# This makes one tiny, CI-skipping commit a month so the scheduled demo refresh
+# (refresh-demo.yml) never gets paused. 30-day cadence keeps a comfortable
+# margin under the 60-day limit.
+
+on:
+  schedule:
+    - cron: '0 7 1 * *'      # 1st of each month, 07:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  ping:
+    name: Heartbeat
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Touch heartbeat file and commit
+        run: |
+          {
+            echo "This file is touched by .github/workflows/keepalive.yml once a month so that"
+            echo "GitHub does not auto-disable the scheduled \"Refresh demo data\" workflow after"
+            echo "60 days of repository inactivity. The timestamp below is updated on each run."
+            echo ""
+            date -u +"%Y-%m-%dT%H:%M:%SZ"
+          } > .github/last-keepalive.txt
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-keepalive.txt
+          git commit -m "chore: keepalive heartbeat [skip ci]" || { echo "nothing to commit"; exit 0; }
+          git push
