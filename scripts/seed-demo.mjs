@@ -27,8 +27,9 @@ if (!URL || !KEY) {
 const supabase = createClient(URL, KEY, { auth: { persistSession: false } })
 
 // ── Tunables ────────────────────────────────────────────────────────────────
-const WEEKS_BACK = 1          // weeks of history
-const WEEKS_FWD = 4           // upcoming weeks (~a month of shifts in advance)
+const WEEKS_BACK = 1          // weeks of history kept
+const HORIZON_DAYS = 42       // always keep this many days of upcoming shifts
+                              // (≥31 days remain even between weekly refreshes)
 const ALL = '00000000-0000-0000-0000-000000000000'
 
 // Weekly duty pattern (day: 0=Mon … 6=Sun)
@@ -86,7 +87,7 @@ async function main() {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0)
   const todayIso = iso(today)
   const startMonday = isoMonday(addDays(today, -7 * WEEKS_BACK))
-  const totalWeeks = WEEKS_BACK + 1 + WEEKS_FWD
+  const endDate = addDays(today, HORIZON_DAYS)
 
   // 1. Who do we have?
   const { data: profiles } = await supabase.from('profiles').select('id, name, role')
@@ -105,14 +106,15 @@ async function main() {
   await supabase.from('audit_log').delete().neq('id', ALL)
   console.log('✓ reset slots / signups / swaps / unavailability / audit')
 
-  // 3. Build + insert slots for the whole window
+  // 3. Build + insert slots for every day from the history start through the
+  //    rolling horizon, applying the weekly TEMPLATE by weekday.
   const slotRows = []
-  for (let w = 0; w < totalWeeks; w++) {
-    const monday = addDays(startMonday, w * 7)
+  for (let d = new Date(startMonday); d <= endDate; d = addDays(d, 1)) {
+    const weekday = (d.getUTCDay() + 6) % 7   // Mon=0 … Sun=6
     for (const t of TEMPLATE) {
-      const date = iso(addDays(monday, t.day))
+      if (t.day !== weekday) continue
       slotRows.push({
-        date, week_start: iso(monday), start_time: t.start, end_time: t.end,
+        date: iso(d), week_start: iso(isoMonday(d)), start_time: t.start, end_time: t.end,
         duty: t.duty, location: t.location, max_volunteers: t.max, notes: '',
       })
     }
@@ -120,7 +122,7 @@ async function main() {
   const { data: slots, error: slotErr } = await supabase.from('slots').insert(slotRows)
     .select('id, date, start_time, duty, max_volunteers')
   if (slotErr) throw slotErr
-  console.log(`✓ ${slots.length} slots across ${totalWeeks} weeks`)
+  console.log(`✓ ${slots.length} slots (history + ${HORIZON_DAYS} days ahead)`)
 
   // 4. Unavailability for a few volunteers (future dates) — seed BEFORE signups
   const unavailByUser = new Map()  // userId -> Set(date)
@@ -129,7 +131,7 @@ async function main() {
     const n = 1 + Math.floor(rng() * 2)
     const set = new Set()
     for (let i = 0; i < n; i++) {
-      const date = iso(addDays(today, 2 + Math.floor(rng() * (7 * WEEKS_FWD + 4))))
+      const date = iso(addDays(today, 2 + Math.floor(rng() * 18)))
       if (set.has(date)) continue
       set.add(date)
       unavailRows.push({ user_id: v.id, date, note: pick(['Holiday', 'Work trip', 'Family visit', 'Appointment', '']) })

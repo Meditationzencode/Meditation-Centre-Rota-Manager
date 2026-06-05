@@ -1,0 +1,35 @@
+name: Refresh demo data
+
+# Keeps the live demo perpetually current. scripts/seed-demo.mjs reseeds a busy
+# rota anchored to "today" with a 42-day horizon, so running it weekly means the
+# demo always has at least ~31 days of upcoming shifts (42 minus the 7-day gap
+# between runs). Anchored data only stays fresh if something re-runs it — this is
+# that something.
+#
+# Requires two repository secrets (Settings → Secrets and variables → Actions):
+#   DEMO_SUPABASE_URL               — the demo project URL
+#   DEMO_SUPABASE_SERVICE_ROLE_KEY  — the demo project service-role key
+#
+# Note: GitHub disables scheduled workflows after 60 days with no repo commits.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'      # every Monday, 06:00 UTC
+  workflow_dispatch: {}        # manual "Run workflow" button
+
+jobs:
+  reseed:
+    name: Reseed demo rota
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.DEMO_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.DEMO_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Reseed demo data
+        run: node scripts/seed-demo.mjs
