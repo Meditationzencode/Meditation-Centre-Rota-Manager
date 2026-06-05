@@ -1,11 +1,17 @@
 /**
- * Sangha Rota — believable demo state (for the v1.0.0 portfolio release)
+ * Sangha Rota — rich demo state (for the portfolio demo)
  *
- * Tops up a curated, current/upcoming week of slots + signups + a few pending
- * swaps so the admin dashboard reads as a live system:
- *   Services Today: ~2   Pending Swaps: 4   Unfilled Slots: ~5
- * Past (history) slots are left untouched. Safe to re-run — it first clears
- * any existing future slots and all swaps, then reseeds deterministically.
+ * Resets the rota domain and seeds a believable, BUSY centre anchored to the
+ * current week, so the app always looks live regardless of the date:
+ *   • a full weekly pattern of duties across last / this / next week
+ *   • realistic sign-ups (history covered; near-term mostly covered; some
+ *     upcoming gaps) spread across all volunteers
+ *   • a few pending shift swaps with human reasons
+ *   • some volunteer unavailability
+ *   • a matching recent activity log
+ *
+ * Deterministic (seeded RNG) so every run produces the same state.
+ * Requires the demo accounts to exist first — run `npm run setup`.
  *
  * Usage:  node --env-file=.env.local scripts/seed-demo.mjs
  */
@@ -20,101 +26,213 @@ if (!URL || !KEY) {
 }
 const supabase = createClient(URL, KEY, { auth: { persistSession: false } })
 
+// ── Tunables ────────────────────────────────────────────────────────────────
+const WEEKS_BACK = 1          // weeks of history
+const WEEKS_FWD = 1           // upcoming weeks (besides the current one)
 const ALL = '00000000-0000-0000-0000-000000000000'
-const iso = d => d.toISOString().slice(0, 10)
-const today = new Date(); today.setUTCHours(0, 0, 0, 0)
-const addDays = (base, n) => { const d = new Date(base); d.setUTCDate(d.getUTCDate() + n); return d }
-const isoMonday = d => { const x = new Date(d); const day = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() - day + 1); return iso(x) }
 
-// Curated slots relative to today (offset in days). `who` lists volunteer
-// first-names to sign up; an empty list = an unfilled slot.
-const PLAN = [
-  // past-but-this-week (history flavour)
-  { off: -2, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2, who: ['James', 'Priya'] },
-  { off: -1, start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1, who: ['Tom'] },
-  // today
-  { off: 0,  start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2, who: ['James', 'Priya'] },
-  { off: 0,  start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3, who: ['Tom'] },
-  // upcoming — a believable mix of covered and open
-  { off: 1,  start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1, who: ['James'], swap: 'Family commitment' },
-  { off: 1,  start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3, who: [] },
-  { off: 2,  start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2, who: ['Suki'], swap: 'Work schedule conflict' },
-  { off: 2,  start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3, who: [] },
-  { off: 3,  start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1, who: [] },
-  { off: 3,  start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3, who: ['Priya'], swap: 'Can cover a different shift instead' },
-  { off: 4,  start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3, who: [] },
-  { off: 5,  start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2, who: ['Tom'], swap: 'Unable to attend this morning' },
-  { off: 5,  start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3, who: [] },
-  { off: 6,  start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1, who: ['Suki'] },
+// Weekly duty pattern (day: 0=Mon … 6=Sun)
+const TEMPLATE = [
+  { day: 0, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
+  { day: 0, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
+  { day: 0, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  { day: 1, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
+  { day: 1, start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1 },
+  { day: 1, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
+  { day: 1, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  { day: 2, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
+  { day: 2, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
+  { day: 2, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  { day: 3, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
+  { day: 3, start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1 },
+  { day: 3, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
+  { day: 3, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  { day: 4, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
+  { day: 4, start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3 },
+  { day: 4, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  { day: 5, start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3 },
+  { day: 5, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
+  { day: 5, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
+  { day: 5, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  { day: 6, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
+  { day: 6, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
+  { day: 6, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
 ]
 
+const SWAP_REASONS = [
+  'Family commitment', 'Work schedule conflict', 'Unable to attend this morning',
+  'Can cover a different shift instead', 'Away on holiday',
+]
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+const iso = d => d.toISOString().slice(0, 10)
+const addDays = (base, n) => { const d = new Date(base); d.setUTCDate(d.getUTCDate() + n); return d }
+const isoMonday = d => { const x = new Date(d); const day = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() - day + 1); return x }
+function mulberry32(seed) {
+  let a = seed
+  return () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+const rng = mulberry32(20260604)
+const pick = arr => arr[Math.floor(rng() * arr.length)]
+
 async function main() {
-  console.log('Sangha Rota — believable demo seed\n')
+  console.log('Sangha Rota — rich demo seed\n')
 
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0)
+  const todayIso = iso(today)
+  const startMonday = isoMonday(addDays(today, -7 * WEEKS_BACK))
+  const totalWeeks = WEEKS_BACK + 1 + WEEKS_FWD
+
+  // 1. Who do we have?
   const { data: profiles } = await supabase.from('profiles').select('id, name, role')
-  const byFirst = new Map((profiles ?? []).map(p => [p.name.split(' ')[0], p.id]))
-  const adminId = (profiles ?? []).find(p => p.role === 'admin')?.id
+  const volunteers = (profiles ?? []).filter(p => p.role === 'volunteer')
+  const coordinators = (profiles ?? []).filter(p => p.role === 'coordinator')
+  const admin = (profiles ?? []).find(p => p.role === 'admin')
+  if (volunteers.length < 4) {
+    console.error('Not enough volunteers — run `npm run setup` first.'); process.exit(1)
+  }
+  console.log(`Members: ${(profiles ?? []).length} (${volunteers.length} volunteers)`)
 
-  // 1. Clear all swaps + any existing future slots (cascades their signups/swaps)
+  // 2. Reset rota domain + audit
   await supabase.from('shift_swaps').delete().neq('id', ALL)
-  await supabase.from('slots').delete().gte('date', iso(today))
-  console.log('✓ cleared swaps + existing future slots')
+  await supabase.from('slots').delete().neq('id', ALL)         // cascades signups + swaps
+  await supabase.from('unavailability').delete().neq('id', ALL)
+  await supabase.from('audit_log').delete().neq('id', ALL)
+  console.log('✓ reset slots / signups / swaps / unavailability / audit')
 
-  // 2. Insert the curated slots
-  const rows = PLAN.map(p => {
-    const date = iso(addDays(today, p.off))
-    return {
-      date, week_start: isoMonday(addDays(today, p.off)),
-      start_time: p.start, end_time: p.end, duty: p.duty, location: p.location,
-      max_volunteers: p.max, notes: '',
-    }
-  })
-  const { data: inserted, error: slotErr } = await supabase.from('slots').insert(rows).select('id, date, start_time, duty')
-  if (slotErr) throw slotErr
-  console.log(`✓ inserted ${inserted.length} curated slots`)
-
-  // match inserted rows back to the plan (date + start_time + duty are unique enough here)
-  const key = r => `${r.date}|${r.start_time.slice(0, 5)}|${r.duty}`
-  const slotByKey = new Map(inserted.map(r => [key({ date: r.date, start_time: r.start_time, duty: r.duty }), r.id]))
-
-  // 3. Signups + 4. pending swaps
-  const signups = []
-  const swaps = []
-  let swapReasonsUsed = 0
-  for (const p of PLAN) {
-    const date = iso(addDays(today, p.off))
-    const slotId = slotByKey.get(`${date}|${p.start}|${p.duty}`)
-    if (!slotId) continue
-    for (const first of p.who) {
-      const uid = byFirst.get(first)
-      if (uid) signups.push({ slot_id: slotId, user_id: uid })
-    }
-    if (p.swap && p.who[0]) {
-      const uid = byFirst.get(p.who[0])
-      if (uid) { swaps.push({ requester_id: uid, slot_id: slotId, reason: p.swap, status: 'pending' }); swapReasonsUsed++ }
+  // 3. Build + insert slots for the whole window
+  const slotRows = []
+  for (let w = 0; w < totalWeeks; w++) {
+    const monday = addDays(startMonday, w * 7)
+    for (const t of TEMPLATE) {
+      const date = iso(addDays(monday, t.day))
+      slotRows.push({
+        date, week_start: iso(monday), start_time: t.start, end_time: t.end,
+        duty: t.duty, location: t.location, max_volunteers: t.max, notes: '',
+      })
     }
   }
-  if (signups.length) {
-    const { error } = await supabase.from('signups').upsert(signups, { onConflict: 'slot_id,user_id', ignoreDuplicates: true })
+  const { data: slots, error: slotErr } = await supabase.from('slots').insert(slotRows)
+    .select('id, date, start_time, duty, max_volunteers')
+  if (slotErr) throw slotErr
+  console.log(`✓ ${slots.length} slots across ${totalWeeks} weeks`)
+
+  // 4. Unavailability for a few volunteers (future dates) — seed BEFORE signups
+  const unavailByUser = new Map()  // userId -> Set(date)
+  const unavailRows = []
+  for (const v of volunteers.slice(0, 5)) {
+    const n = 1 + Math.floor(rng() * 2)
+    const set = new Set()
+    for (let i = 0; i < n; i++) {
+      const date = iso(addDays(today, 2 + Math.floor(rng() * (7 * WEEKS_FWD + 4))))
+      if (set.has(date)) continue
+      set.add(date)
+      unavailRows.push({ user_id: v.id, date, note: pick(['Holiday', 'Work trip', 'Family visit', 'Appointment', '']) })
+    }
+    unavailByUser.set(v.id, set)
+  }
+  if (unavailRows.length) await supabase.from('unavailability').upsert(unavailRows, { onConflict: 'user_id,date', ignoreDuplicates: true })
+  console.log(`✓ ${unavailRows.length} unavailability entries`)
+
+  // 5. Assign sign-ups — history covered, near-term mostly covered, some gaps ahead
+  const signupRows = []
+  const onDate = new Map()    // `${userId}|${date}` flag to avoid double-booking a day
+  let rot = 0
+  const order = [...volunteers].sort(() => rng() - 0.5)
+  for (const s of slots) {
+    const daysAhead = Math.round((new Date(s.date) - today) / 86_400_000)
+    let target
+    if (daysAhead < 0)        target = rng() < 0.85 ? s.max_volunteers : Math.max(1, s.max_volunteers - 1)
+    else if (daysAhead === 0) target = rng() < 0.75 ? s.max_volunteers : 1
+    else {
+      const emptyProb = Math.min(0.45, 0.05 + 0.035 * daysAhead)
+      if (rng() < emptyProb) { continue }                       // open slot
+      target = 1 + (rng() < 0.3 ? 1 : 0)
+    }
+    target = Math.min(target, s.max_volunteers)
+    let assigned = 0, tries = 0
+    while (assigned < target && tries < order.length) {
+      const v = order[rot % order.length]; rot++; tries++
+      const key = `${v.id}|${s.date}`
+      if (onDate.has(key)) continue
+      if (unavailByUser.get(v.id)?.has(s.date)) continue
+      onDate.set(key, true)
+      signupRows.push({ slot_id: s.id, user_id: v.id })
+      assigned++
+    }
+  }
+  for (let i = 0; i < signupRows.length; i += 200) {
+    const { error } = await supabase.from('signups').upsert(signupRows.slice(i, i + 200), { onConflict: 'slot_id,user_id', ignoreDuplicates: true })
     if (error) console.log('  ⚠ signups:', error.message)
   }
-  if (swaps.length) {
-    const { error } = await supabase.from('shift_swaps').insert(swaps)
-    if (error) console.log('  ⚠ swaps:', error.message)
-  }
-  console.log(`✓ ${signups.length} signups, ${swaps.length} pending swaps`)
+  console.log(`✓ ${signupRows.length} sign-ups`)
 
-  // 5. Report the resulting dashboard-relevant numbers
-  const c = async (b = q => q) => (await b(supabase.from('slots').select('*', { count: 'exact', head: true }))).count ?? 0
-  const t = iso(today)
-  const servicesToday = await c(q => q.eq('date', t))
-  const futureSlots = (await supabase.from('slots').select('id').gte('date', t)).data ?? []
-  const su = (await supabase.from('signups').select('slot_id')).data ?? []
-  const filled = new Set(su.map(s => s.slot_id))
-  const unfilledFuture = futureSlots.filter(s => !filled.has(s.id)).length
-  const pending = (await supabase.from('shift_swaps').select('*', { count: 'exact', head: true }).eq('status', 'pending')).count ?? 0
-  console.log(`\nDashboard preview → Services Today: ${servicesToday} · Pending Swaps: ${pending} · Unfilled (future): ${unfilledFuture}`)
-  console.log(`(admin: ${adminId ? 'ok' : 'missing'})`)
+  // 6. Pending swaps on a few upcoming, covered slots (distinct requesters)
+  const signedBySlot = new Map()
+  for (const su of signupRows) {
+    if (!signedBySlot.has(su.slot_id)) signedBySlot.set(su.slot_id, [])
+    signedBySlot.get(su.slot_id).push(su.user_id)
+  }
+  const upcoming = slots
+    .filter(s => new Date(s.date) > today && signedBySlot.has(s.id))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const swapRows = []
+  const usedReq = new Set()
+  for (const s of upcoming) {
+    if (swapRows.length >= SWAP_REASONS.length) break
+    const requester = signedBySlot.get(s.id).find(u => !usedReq.has(u))
+    if (!requester) continue
+    usedReq.add(requester)
+    swapRows.push({ requester_id: requester, slot_id: s.id, reason: SWAP_REASONS[swapRows.length], status: 'pending' })
+  }
+  if (swapRows.length) await supabase.from('shift_swaps').insert(swapRows)
+  console.log(`✓ ${swapRows.length} pending swaps`)
+
+  // 7. Recent activity log matching the data
+  const nameById = new Map((profiles ?? []).map(p => [p.id, p.name]))
+  const at = mins => new Date(Date.now() - mins * 60_000).toISOString()
+  const auditRows = []
+  // swap requests for the pending swaps
+  swapRows.forEach((sw, i) => auditRows.push({
+    user_id: sw.requester_id, action: 'swap.request', entity_type: 'shift_swap', entity_id: sw.slot_id,
+    detail: `Requested swap for slot ${sw.slot_id}`, created_at: at(45 + i * 30),
+  }))
+  // a spread of recent sign-ups
+  const recentSignups = signupRows.slice(0, 8)
+  recentSignups.forEach((su, i) => {
+    const s = slots.find(x => x.id === su.slot_id)
+    if (s) auditRows.push({
+      user_id: su.user_id, action: 'signup.add', entity_type: 'signup', entity_id: s.id,
+      detail: `Signed up for ${s.duty} on ${s.date}`, created_at: at(180 + i * 55),
+    })
+  })
+  // scheduling actions by coordinators / admin
+  const someSlot = slots[Math.floor(slots.length / 2)]
+  if (coordinators[0] && someSlot) auditRows.push({
+    user_id: coordinators[0].id, action: 'slot.create', entity_type: 'slot', entity_id: someSlot.id,
+    detail: `Created slot: ${someSlot.duty} on ${someSlot.date} at Shrine Room`, created_at: at(700),
+  })
+  if (admin) auditRows.push({
+    user_id: admin.id, action: 'member.update', entity_type: 'member', entity_id: admin.id,
+    detail: `Updated member: ${nameById.get(volunteers[volunteers.length - 1].id)} → role=volunteer, active=true`, created_at: at(1400),
+  })
+  if (admin) auditRows.push({
+    user_id: admin.id, action: 'slots.generate', entity_type: 'slot', entity_id: null,
+    detail: `Generated ${TEMPLATE.length} slots from ${iso(startMonday)} to ${slots[slots.length - 1].date}`, created_at: at(2600),
+  })
+  await supabase.from('audit_log').insert(auditRows)
+  console.log(`✓ ${auditRows.length} activity entries`)
+
+  // 8. Dashboard preview
+  const filled = new Set(signupRows.map(s => s.slot_id))
+  const servicesToday = slots.filter(s => s.date === todayIso).length
+  const unfilledFuture = slots.filter(s => s.date >= todayIso && !filled.has(s.id)).length
+  console.log(`\nDashboard → Services Today: ${servicesToday} · Pending Swaps: ${swapRows.length} · Unfilled (future): ${unfilledFuture} · Volunteers: ${volunteers.length}`)
   console.log('\n✓ done')
 }
 
