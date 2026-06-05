@@ -147,12 +147,12 @@ async function main() {
   for (const s of slots) {
     const daysAhead = Math.round((new Date(s.date) - today) / 86_400_000)
     let target
-    if (daysAhead < 0)        target = rng() < 0.85 ? s.max_volunteers : Math.max(1, s.max_volunteers - 1)
-    else if (daysAhead === 0) target = rng() < 0.75 ? s.max_volunteers : 1
-    else {
-      const emptyProb = Math.min(0.45, 0.05 + 0.035 * daysAhead)
-      if (rng() < emptyProb) { continue }                       // open slot
-      target = 1 + (rng() < 0.3 ? 1 : 0)
+    if (daysAhead <= 0) {
+      target = s.max_volunteers                                  // history + today: fully covered
+    } else {
+      const emptyProb = Math.min(0.12, 0.015 + 0.008 * daysAhead)
+      if (rng() < emptyProb) { continue }                        // leave a few open slots
+      target = Math.max(1, Math.round(s.max_volunteers * (0.7 + rng() * 0.3)))  // well-staffed
     }
     target = Math.min(target, s.max_volunteers)
     let assigned = 0, tries = 0
