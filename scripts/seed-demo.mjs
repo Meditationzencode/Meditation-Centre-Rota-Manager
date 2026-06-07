@@ -90,7 +90,8 @@ async function main() {
   const endDate = addDays(today, HORIZON_DAYS)
 
   // 1. Who do we have?
-  const { data: profiles } = await supabase.from('profiles').select('id, name, role')
+  const { data: profiles, error: profErr } = await supabase.from('profiles').select('id, name, role')
+  if (profErr) throw new Error(`Could not read profiles — check the service-role key / URL. ${profErr.message}`)
   const volunteers = (profiles ?? []).filter(p => p.role === 'volunteer')
   const coordinators = (profiles ?? []).filter(p => p.role === 'coordinator')
   const admin = (profiles ?? []).find(p => p.role === 'admin')

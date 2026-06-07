@@ -35,5 +35,13 @@ jobs:
         run: test -n "$NEXT_PUBLIC_SUPABASE_URL" || { echo "::error::DEMO_SUPABASE_URL secret is missing or empty"; exit 1; }
       - name: Check DEMO_SUPABASE_SERVICE_ROLE_KEY secret
         run: test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "::error::DEMO_SUPABASE_SERVICE_ROLE_KEY secret is missing or empty"; exit 1; }
+      - name: Verify Supabase URL + service key
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
+          echo "Supabase responded: HTTP $code"
+          test "$code" = "200" || { echo "::error::Supabase rejected the request (HTTP $code) — the DEMO_SUPABASE_URL or DEMO_SUPABASE_SERVICE_ROLE_KEY value is wrong"; exit 1; }
       - name: Reseed demo data
         run: node scripts/seed-demo.mjs
