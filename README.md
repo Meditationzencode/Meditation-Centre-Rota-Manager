@@ -52,6 +52,7 @@ This project demonstrates production-style full-stack development: authenticatio
 - [Security and privacy](#security-and-privacy)
 - [Testing](#testing)
 - [What I learned](#what-i-learned)
+- [Known trade-offs](#known-trade-offs)
 - [Future improvements](#future-improvements)
 
 ## Screenshots
@@ -504,6 +505,15 @@ My swap-request tests passed in isolation but failed in the suite. The first slo
 
 **3. Server Actions made me stop reaching for an API layer by reflex.**
 Coming from older React tutorials, my instinct was to write `/api/signups/route.ts`, fetch from the client, handle loading states, etc. Next.js 15 Server Actions let you call a server function directly from a `<form>` with `action={signUp}` — no API route, no `fetch`, no loading state to wire up. `useActionState` gives you the result and pending status as a hook. The mental shift was realising that "the network is an implementation detail" — I express *what* the user is doing, not *how* it travels across the wire.
+
+## Known trade-offs
+
+Every decision below buys something and costs something. I'd make the same calls again for a project this size, but a larger team or product might choose differently.
+
+- **Server Actions keep the app simple, but couple the backend to Next.js.** There's no portable REST/GraphQL layer, so the data layer can't be reused by a mobile app or third-party client without adding one. Worth it here for the reduced ceremony and end-to-end type safety; not worth it if a second consumer were on the roadmap.
+- **Playwright E2E gives high confidence but runs slower than unit tests.** The suite drives a real browser against real Supabase (~6 min) rather than mocking. The signal is higher, but the feedback loop is longer — so the fast pure-logic suite is what runs in CI, with E2E run against an isolated project.
+- **The live demo uses public credentials against fictional data.** Anyone can log in as admin, which is the point for a portfolio, but it means the demo is intentionally not hardened against abuse (no rate limiting on the shared accounts). It runs on a throwaway project with no real data, so the blast radius is nil.
+- **Service-role operations are confined to server-side admin flows.** Actions that must bypass RLS (creating users, approving swaps) use the service-role client, which never reaches the browser. This concentrates trust in a small, auditable set of server actions rather than spreading privileged access around.
 
 ## Future improvements
 
