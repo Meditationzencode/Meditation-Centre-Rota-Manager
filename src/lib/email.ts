@@ -19,6 +19,17 @@ async function send(to: string | string[], subject: string, html: string) {
   }
 }
 
+// Escape user-controlled text before interpolating it into email HTML,
+// so a value like a swap reason or duty name can't inject markup.
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
 function wrap(body: string) {
   return `<!DOCTYPE html><html><body style="font-family:Georgia,serif;max-width:560px;margin:40px auto;color:#292524;background:#fafaf9;padding:32px;border-radius:8px;border:1px solid #e7e5e4">
   <div style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#78716c;margin-bottom:8px">◆ Bodhi Grove</div>
@@ -33,10 +44,10 @@ export function sendSignupConfirmation(to: string, duty: string, date: string, t
     <h2 style="font-size:20px;margin:0 0 16px">Sign-up confirmed</h2>
     <p>You have signed up for the following shift:</p>
     <table style="border-collapse:collapse;width:100%;margin:16px 0">
-      <tr><td style="padding:6px 0;color:#78716c;width:100px">Duty</td><td style="font-weight:bold">${duty}</td></tr>
-      <tr><td style="padding:6px 0;color:#78716c">Date</td><td>${date}</td></tr>
-      <tr><td style="padding:6px 0;color:#78716c">Time</td><td>${time}</td></tr>
-      <tr><td style="padding:6px 0;color:#78716c">Location</td><td>${location}</td></tr>
+      <tr><td style="padding:6px 0;color:#78716c;width:100px">Duty</td><td style="font-weight:bold">${escapeHtml(duty)}</td></tr>
+      <tr><td style="padding:6px 0;color:#78716c">Date</td><td>${escapeHtml(date)}</td></tr>
+      <tr><td style="padding:6px 0;color:#78716c">Time</td><td>${escapeHtml(time)}</td></tr>
+      <tr><td style="padding:6px 0;color:#78716c">Location</td><td>${escapeHtml(location)}</td></tr>
     </table>
     <p>Thank you for volunteering.</p>
   `))
@@ -45,20 +56,20 @@ export function sendSignupConfirmation(to: string, duty: string, date: string, t
 export function sendSignupCancelled(to: string, duty: string, date: string) {
   return send(to, `Rota sign-up cancelled: ${duty}`, wrap(`
     <h2 style="font-size:20px;margin:0 0 16px">Sign-up cancelled</h2>
-    <p>Your sign-up for <strong>${duty}</strong> on <strong>${date}</strong> has been cancelled.</p>
+    <p>Your sign-up for <strong>${escapeHtml(duty)}</strong> on <strong>${escapeHtml(date)}</strong> has been cancelled.</p>
     <p>If this was a mistake, you can sign up again on the rota.</p>
   `))
 }
 
 export function sendSwapRequestedToAdmins(adminEmails: string[], requesterName: string, duty: string, date: string, reason: string) {
   if (adminEmails.length === 0) return Promise.resolve()
-  const reasonHtml = reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''
+  const reasonHtml = reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ''
   return send(adminEmails, `Swap request: ${requesterName} — ${duty}`, wrap(`
     <h2 style="font-size:20px;margin:0 0 16px">Shift swap request</h2>
-    <p><strong>${requesterName}</strong> has requested a swap for:</p>
+    <p><strong>${escapeHtml(requesterName)}</strong> has requested a swap for:</p>
     <table style="border-collapse:collapse;width:100%;margin:16px 0">
-      <tr><td style="padding:6px 0;color:#78716c;width:100px">Duty</td><td style="font-weight:bold">${duty}</td></tr>
-      <tr><td style="padding:6px 0;color:#78716c">Date</td><td>${date}</td></tr>
+      <tr><td style="padding:6px 0;color:#78716c;width:100px">Duty</td><td style="font-weight:bold">${escapeHtml(duty)}</td></tr>
+      <tr><td style="padding:6px 0;color:#78716c">Date</td><td>${escapeHtml(date)}</td></tr>
     </table>
     ${reasonHtml}
     <p>Log in to review the request in the Swaps section.</p>
@@ -69,7 +80,7 @@ export function sendSwapDecision(to: string, approved: boolean, duty: string, da
   const verb = approved ? 'approved' : 'rejected'
   return send(to, `Swap request ${verb}: ${duty}`, wrap(`
     <h2 style="font-size:20px;margin:0 0 16px">Swap request ${verb}</h2>
-    <p>Your swap request for <strong>${duty}</strong> on <strong>${date}</strong> has been <strong>${verb}</strong>.</p>
+    <p>Your swap request for <strong>${escapeHtml(duty)}</strong> on <strong>${escapeHtml(date)}</strong> has been <strong>${verb}</strong>.</p>
     ${approved ? '<p>Your sign-up has been cancelled. You are free for that slot.</p>' : '<p>Your sign-up remains in place. Please continue as scheduled.</p>'}
   `))
 }
