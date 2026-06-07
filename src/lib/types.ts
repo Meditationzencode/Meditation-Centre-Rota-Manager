@@ -96,6 +96,15 @@ export const DUTIES = [
   'Shrine Room Clean',
   'Garden Maintenance',
   'Welcome Greeter',
+  // Special events and classes
+  'Sangha Film Club',
+  "Women's Circle",
+  "Men's Evening",
+  'Extended Practice Morning',
+  'Buddha Day (Wesak)',
+  'Puja Evening',
+  'Yoga',
+  'Silence Day',
   'Other',
 ] as const
 
@@ -107,4 +116,7 @@ export const LOCATIONS = [
   'Main Entrance',
   'Library',
   'Courtyard',
+  'Meditation Hall',
+  'Studio',
+  'Community Room',
 ] as const
