@@ -19,7 +19,7 @@ Built as a portfolio project to demonstrate full-stack engineering end-to-end �
 **By the numbers:**
 - **7 PostgreSQL tables** with Row-Level Security on every one
 - **4 user roles** with three independent layers of access control (database, middleware, server actions)
-- **74 Playwright tests** covering auth, permissions, CRUD, the full swap lifecycle, and Row-Level Security enforced directly at the database
+- **47 end-to-end (Playwright) tests plus 21 unit tests** covering auth, permissions, CRUD, the full swap lifecycle, and Row-Level Security enforced directly at the database
 - **18+ screens** across desktop and mobile breakpoints, all captured below
 - **Deployed live on Vercel** — try it without cloning a thing
 
@@ -228,15 +228,17 @@ These variables are never committed to version control. The anon key is safe to 
 
 ### 4. Run the database setup
 
-In the **Supabase SQL Editor**, run these files in order (the numeric prefix is the run order):
+In the **Supabase SQL Editor**, run these schema files in numeric order (`07_seed.sql` is optional sample data and is covered separately below):
 
 ```
-supabase/01_schema.sql         ← core tables (profiles, slots, signups) + auto-profile trigger
-supabase/02_rls.sql            ← Row-Level Security policies + my_role() helper
-supabase/03_shift_swaps.sql    ← shift_swaps table and its RLS policies
-supabase/04_features.sql       ← unavailability and audit_log tables + RLS
-supabase/05_recurring.sql      ← recurring_templates table + RLS
-supabase/06_schema_v2.sql      ← later schema additions (phone, slot status, admin notes)
+supabase/01_schema.sql           ← core tables (profiles, slots, signups) + auto-profile trigger
+supabase/02_rls.sql              ← Row-Level Security policies + my_role() helper
+supabase/03_shift_swaps.sql      ← shift_swaps table and its RLS policies
+supabase/04_features.sql         ← unavailability and audit_log tables + RLS
+supabase/05_recurring.sql        ← recurring_templates table + RLS
+supabase/06_schema_v2.sql        ← later schema additions (phone, slot status, admin notes)
+supabase/08_capacity_trigger.sql ← trigger that blocks sign-ups once a slot is full
+supabase/09_length_checks.sql    ← CHECK constraints bounding text field lengths
 ```
 
 Then optionally run `supabase/07_seed.sql` for sample data, or skip it and run `npm run setup` (next step) to get the full demo dataset with auth users.
@@ -355,7 +357,9 @@ supabase/
 ├── 04_features.sql            ← unavailability and audit_log tables + RLS
 ├── 05_recurring.sql           ← recurring_templates table + RLS
 ├── 06_schema_v2.sql           ← later schema additions
-└── 07_seed.sql                ← demo rota data
+├── 07_seed.sql                ← demo rota data
+├── 08_capacity_trigger.sql    ← blocks sign-ups once a slot is full
+└── 09_length_checks.sql       ← CHECK constraints on text field lengths
 ```
 
 ## Security and privacy
