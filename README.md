@@ -40,6 +40,7 @@ This project demonstrates production-style full-stack development: authenticatio
 - [Screenshots](#screenshots)
 - [Try the live demo](#try-the-live-demo)
 - [Tech stack](#tech-stack)
+- [Architecture overview](#architecture-overview)
 - [Features](#features)
 - [Why I built this](#why-i-built-this)
 - [Technical decisions](#technical-decisions)
@@ -134,6 +135,48 @@ The live demo runs on a dedicated, throwaway Supabase project with fictional dat
 | ORM / client | Supabase JS client + `@supabase/ssr`|
 | Styling      | Tailwind CSS                        |
 | Deployment   | Vercel                              |
+
+## Architecture overview
+
+A request flows down a single, mostly-server-side path. Authorization is
+checked at three independent layers, so a bypass at one is still caught by the
+next — the database has the final say.
+
+```
+                         Browser
+                            │  (HTTP request / form submit)
+                            ▼
+              ┌─────────────────────────────┐
+              │  middleware.ts              │  ① session guard — redirects
+              │                             │     unauthenticated requests
+              └─────────────────────────────┘
+                            │
+                            ▼
+              ┌─────────────────────────────┐
+              │  Next.js App Router         │  Server Components fetch data
+              │  Server Components (RSC)    │  on the server (minimal JS shipped)
+              └─────────────────────────────┘
+                            │  forms call action={…}
+                            ▼
+              ┌─────────────────────────────┐
+              │  Server Actions             │  ② role checks (requireRole)
+              │  src/lib/actions/*          │     + input validation
+              └─────────────────────────────┘
+                            │  Supabase JS client
+                            ▼
+              ┌─────────────────────────────┐
+              │  Supabase Auth + PostgreSQL │  ③ Row-Level Security — every
+              │  Row-Level Security (RLS)   │     read/write checked in Postgres
+              └─────────────────────────────┘
+
+  Realtime: Postgres change → Supabase WebSocket → client calls
+  router.refresh() → the Server Component re-runs and re-renders.
+```
+
+Because the Supabase anon key ships in the browser bundle, the RLS layer (③)
+is the real authority: even a hand-crafted query straight from DevTools only
+returns rows the signed-in user is allowed to see. Middleware (①) and Server
+Actions (②) are defence in depth on top of it.
 
 ## Features
 
