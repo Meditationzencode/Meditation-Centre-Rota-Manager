@@ -438,6 +438,7 @@ The project includes tests for authentication, role-based permissions, shift CRU
 ### Continuous integration
 
 [![CI](https://github.com/Meditationzencode/Meditation-Centre-Rota-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Meditationzencode/Meditation-Centre-Rota-Manager/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)](#continuous-integration)
 
 Every push and pull request to `main` runs the [CI workflow](.github/workflows/ci.yml) on GitHub Actions (Node 22, Ubuntu). A green badge means all four checks below passed on the latest commit — click it for the live run history and logs.
 
@@ -446,9 +447,11 @@ Every push and pull request to `main` runs the [CI workflow](.github/workflows/c
 | Typecheck | `npm run typecheck` | No TypeScript errors across the codebase |
 | Lint | `npm run lint` | ESLint clean (Next.js config) |
 | Build | `npm run build` | Production build compiles; server/client boundaries hold |
-| Unit tests | `npm run test:unit` | 21 pure-logic tests (validation + scheduling) pass |
+| Unit tests + coverage | `npm run test:unit:coverage` | 21 pure-logic tests pass, with coverage thresholds enforced |
 
 The build runs against placeholder Supabase env vars, so no secrets are needed in CI. The full Playwright E2E/RLS suite runs against a real, isolated Supabase project (see [End-to-end tests](#end-to-end-tests)) rather than in CI.
+
+**Coverage.** `npm run test:unit:coverage` runs the unit suite under [c8](https://github.com/bcoe/c8) and measures the pure-logic layer it targets (`validation`, `scheduling`, and error mapping): **97% of statements and lines, 100% of functions**. CI fails if coverage drops below the thresholds in [`.c8rc.json`](.c8rc.json), so the badge can't quietly go stale. (Coverage is scoped to that logic layer by design — the rest of the app is covered by the Playwright E2E suite, not unit tests.)
 
 Key tested areas:
 - Login and logout flow
