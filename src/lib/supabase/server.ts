@@ -1,7 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSbClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { SUPABASE_URL, SUPABASE_ANON_KEY, getServiceRoleKey } from '@/lib/env'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env-public'
+import { getServiceRoleKey } from '@/lib/env-server'
 import { log } from '@/lib/log'
 import type { Role } from '@/lib/types'
 

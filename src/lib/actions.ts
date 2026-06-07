@@ -7,7 +7,7 @@ import { sendSignupConfirmation, sendSignupCancelled, sendSwapRequestedToAdmins,
 import { requireUser, requireRole } from '@/lib/auth'
 import { translatePostgresError } from '@/lib/errors'
 import { log } from '@/lib/log'
-import { SITE_URL } from '@/lib/env'
+import { SITE_URL } from '@/lib/env-public'
 import { parseSlotForm, parseTemplateForm, str, isEmail, MAX_LEN } from '@/lib/validation'
 import { expandTemplatesToSlots, type SlotTemplate } from '@/lib/scheduling'
 import type { ActionResult, Role } from '@/lib/types'
