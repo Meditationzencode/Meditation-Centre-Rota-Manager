@@ -237,8 +237,8 @@ supabase/03_shift_swaps.sql      ← shift_swaps table and its RLS policies
 supabase/04_features.sql         ← unavailability and audit_log tables + RLS
 supabase/05_recurring.sql        ← recurring_templates table + RLS
 supabase/06_schema_v2.sql        ← later schema additions (phone, slot status, admin notes)
-supabase/08_capacity_trigger.sql ← prevents over-capacity sign-ups at the database level
-supabase/09_length_checks.sql    ← DB-level length checks matching server validation
+supabase/08_capacity_trigger.sql ← database-level capacity enforcement
+supabase/09_length_checks.sql    ← database-level length constraints
 ```
 
 Then optionally run `supabase/07_seed.sql` for sample data, or skip it and run `npm run setup` (next step) to get the full demo dataset with auth users.
@@ -368,8 +368,8 @@ supabase/
 ├── 05_recurring.sql           ← recurring_templates table + RLS
 ├── 06_schema_v2.sql           ← later schema additions
 ├── 07_seed.sql                ← demo rota data
-├── 08_capacity_trigger.sql    ← prevents over-capacity sign-ups at the database level
-└── 09_length_checks.sql       ← DB-level length checks matching server validation
+├── 08_capacity_trigger.sql    ← database-level capacity enforcement
+└── 09_length_checks.sql       ← database-level length constraints
 ```
 
 ## Security and privacy
