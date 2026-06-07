@@ -119,7 +119,7 @@ The six screens below cover the core of the app; the rest are tucked under **Vie
 | Coordinator | `coord1@bodhigrove.demo` | `Demo1234!` |
 | Volunteer | `vol1@bodhigrove.demo` | `Demo1234!` |
 
-Demo data is fictional and can be safely modified; the seeded dataset can be recreated locally with `npm run setup`.
+The live demo runs on a dedicated, throwaway Supabase project with fictional data only — demo users have no access to any real organisation data. Everything here is safe to modify; the seeded dataset can be recreated locally with `npm run setup`.
 
 ---
 
