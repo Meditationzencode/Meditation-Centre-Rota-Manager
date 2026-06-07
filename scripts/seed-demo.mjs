@@ -58,6 +58,19 @@ const TEMPLATE = [
   { day: 6, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
   { day: 6, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
   { day: 6, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
+  // Fixed weekly special events & classes
+  { day: 1, start: '17:00', end: '20:00', duty: 'Sangha Film Club',   location: 'Community Room', max: 2 },
+  { day: 4, start: '18:00', end: '20:00', duty: 'Puja Evening',       location: 'Shrine Room',    max: 2 },
+  { day: 6, start: '10:00', end: '11:00', duty: 'Yoga',               location: 'Studio',         max: 1 },
+]
+
+// Fixed weekly events that also exist as recurring templates (so the admin
+// "Recurring schedule" screen shows realistic definitions). days_of_week is
+// 0 = Monday … 6 = Sunday, matching the TEMPLATE day index above.
+const RECURRING_TEMPLATES = [
+  { duty: 'Sangha Film Club', location: 'Community Room', days_of_week: [1], start_time: '17:00', end_time: '20:00', max_volunteers: 2, notes: 'Weekly film and discussion', active: true },
+  { duty: 'Puja Evening',     location: 'Shrine Room',    days_of_week: [4], start_time: '18:00', end_time: '20:00', max_volunteers: 2, notes: 'Chanting and ritual',        active: true },
+  { duty: 'Yoga',             location: 'Studio',         days_of_week: [6], start_time: '10:00', end_time: '11:00', max_volunteers: 1, notes: 'All-levels class',           active: true },
 ]
 
 const SWAP_REASONS = [
@@ -105,7 +118,8 @@ async function main() {
   await supabase.from('slots').delete().neq('id', ALL)         // cascades signups + swaps
   await supabase.from('unavailability').delete().neq('id', ALL)
   await supabase.from('audit_log').delete().neq('id', ALL)
-  console.log('✓ reset slots / signups / swaps / unavailability / audit')
+  await supabase.from('recurring_templates').delete().neq('id', ALL)
+  console.log('✓ reset slots / signups / swaps / unavailability / audit / templates')
 
   // 3. Build + insert slots for every day from the history start through the
   //    rolling horizon, applying the weekly TEMPLATE by weekday.
@@ -120,10 +134,37 @@ async function main() {
       })
     }
   }
+  // 3b. Varying-day and monthly special events (the fixed weekly ones are in
+  //     TEMPLATE above). Placed deterministically within the seeded range.
+  const pushSlot = (d, start, end, duty, location, max) => slotRows.push({
+    date: iso(d), week_start: iso(isoMonday(d)), start_time: start, end_time: end,
+    duty, location, max_volunteers: max, notes: '',
+  })
+
+  // Extended Practice Morning — weekly, but a different weekday (Mon–Fri) each week.
+  for (let wk = new Date(startMonday); wk <= endDate; wk = addDays(wk, 7)) {
+    const d = addDays(wk, Math.floor(rng() * 5))
+    if (d >= startMonday && d <= endDate) pushSlot(d, '11:00', '15:00', 'Extended Practice Morning', 'Meditation Hall', 2)
+  }
+
+  // Monthly evening circles + Buddha Day — one upcoming occurrence each.
+  pushSlot(addDays(today, 9),  '19:00', '21:00', "Women's Circle",     'Community Room', 2)
+  pushSlot(addDays(today, 16), '19:00', '21:00', "Men's Evening",      'Community Room', 2)
+  pushSlot(addDays(today, 23), '09:00', '17:00', 'Buddha Day (Wesak)', 'Shrine Room',    4)
+
+  // Silence Day — monthly, on the next Saturday at least 5 days out.
+  let sat = addDays(today, 5)
+  while (((sat.getUTCDay() + 6) % 7) !== 5) sat = addDays(sat, 1)
+  if (sat <= endDate) pushSlot(sat, '09:00', '17:00', 'Silence Day', 'Shrine Room', 3)
+
   const { data: slots, error: slotErr } = await supabase.from('slots').insert(slotRows)
     .select('id, date, start_time, duty, max_volunteers')
   if (slotErr) throw slotErr
   console.log(`✓ ${slots.length} slots (history + ${HORIZON_DAYS} days ahead)`)
+
+  // 3c. Recurring templates for the fixed weekly events.
+  await supabase.from('recurring_templates').insert(RECURRING_TEMPLATES)
+  console.log(`✓ ${RECURRING_TEMPLATES.length} recurring templates`)
 
   // 4. Unavailability for a few volunteers (future dates) — seed BEFORE signups
   const unavailByUser = new Map()  // userId -> Set(date)
