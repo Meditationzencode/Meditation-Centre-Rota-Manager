@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   const countFor = (slotId: string) => (allSignups ?? []).filter(s => s.slot_id === slotId).length
 
   // Today's services, with derived coverage/timing status.
-  const todaySlots = (futureSlots ?? []).filter(s => s.date === today)
+  const todaySlots = (futureSlots ?? []).filter(s => s.date === today && s.status !== 'cancelled')
   const scheduleRows = todaySlots.slice(0, 6).map(s => {
     const signups = countFor(s.id)
     const start = fmtTime(s.start_time)
@@ -95,13 +95,13 @@ export default async function DashboardPage() {
   sevenDays.setDate(sevenDays.getDate() + 7)
   const sevenDaysStr = sevenDays.toISOString().slice(0, 10)
   const openSlots = (futureSlots ?? [])
-    .filter(s => s.date <= sevenDaysStr)
+    .filter(s => s.date <= sevenDaysStr && s.status !== 'cancelled')
     .map(s => ({ ...s, spotsLeft: s.max_volunteers - countFor(s.id) }))
     .filter(s => s.spotsLeft > 0)
 
   // Manager stats.
   const volunteersActive = (allProfiles ?? []).filter(p => p.role === 'volunteer' && p.active).length
-  const unassignedFuture = (futureSlots ?? []).filter(s => countFor(s.id) === 0).length
+  const unassignedFuture = (futureSlots ?? []).filter(s => s.status !== 'cancelled' && countFor(s.id) === 0).length
   const unassignedToday = todaySlots.filter(s => countFor(s.id) === 0).length
   const nextToday = todaySlots.find(s => fmtTime(s.start_time) >= nowHM)
 

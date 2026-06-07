@@ -210,7 +210,7 @@ function SlotCard({
                 <span className="text-[10px] text-ink/40 italic">Swap pending</span>
               )}
             </>
-          ) : slot.spotsLeft > 0 ? (
+          ) : slot.spotsLeft > 0 && !isCancelled ? (
             <>
               <form action={signupAction}>
                 <input type="hidden" name="slotId" value={slot.id} />

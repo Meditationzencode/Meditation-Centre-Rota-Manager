@@ -130,7 +130,7 @@ async function main() {
       if (t.day !== weekday) continue
       slotRows.push({
         date: iso(d), week_start: iso(isoMonday(d)), start_time: t.start, end_time: t.end,
-        duty: t.duty, location: t.location, max_volunteers: t.max, notes: '',
+        duty: t.duty, location: t.location, max_volunteers: t.max, notes: '', status: 'open',
       })
     }
   }
@@ -138,7 +138,7 @@ async function main() {
   //     TEMPLATE above). Placed deterministically within the seeded range.
   const pushSlot = (d, start, end, duty, location, max) => slotRows.push({
     date: iso(d), week_start: iso(isoMonday(d)), start_time: start, end_time: end,
-    duty, location, max_volunteers: max, notes: '',
+    duty, location, max_volunteers: max, notes: '', status: 'open',
   })
 
   // Extended Practice Morning — weekly, but a different weekday (Mon–Fri) each week.
@@ -157,10 +157,32 @@ async function main() {
   while (((sat.getUTCDay() + 6) % 7) !== 5) sat = addDays(sat, 1)
   if (sat <= endDate) pushSlot(sat, '09:00', '17:00', 'Silence Day', 'Shrine Room', 3)
 
+  // 3a-i. Centre policy: when a special event overlaps a daily meditation
+  //       class, that meditation class is cancelled for the day. Mark any
+  //       Morning/Evening Sitting that overlaps a same-day event as cancelled.
+  const MEDITATION_DUTIES = new Set(['Morning Sitting', 'Evening Sitting'])
+  const EVENT_DUTIES = new Set([
+    'Sangha Film Club', 'Puja Evening', 'Yoga', 'Extended Practice Morning',
+    "Women's Circle", "Men's Evening", 'Buddha Day (Wesak)', 'Silence Day',
+  ])
+  const overlaps = (a, b) => a.start_time < b.end_time && b.start_time < a.end_time
+  const eventsByDate = new Map()
+  for (const s of slotRows) {
+    if (!EVENT_DUTIES.has(s.duty)) continue
+    if (!eventsByDate.has(s.date)) eventsByDate.set(s.date, [])
+    eventsByDate.get(s.date).push(s)
+  }
+  let cancelledCount = 0
+  for (const s of slotRows) {
+    if (!MEDITATION_DUTIES.has(s.duty)) continue
+    const sameDay = eventsByDate.get(s.date)
+    if (sameDay && sameDay.some(e => overlaps(s, e))) { s.status = 'cancelled'; cancelledCount++ }
+  }
+
   const { data: slots, error: slotErr } = await supabase.from('slots').insert(slotRows)
-    .select('id, date, start_time, duty, max_volunteers')
+    .select('id, date, start_time, duty, max_volunteers, status')
   if (slotErr) throw slotErr
-  console.log(`✓ ${slots.length} slots (history + ${HORIZON_DAYS} days ahead)`)
+  console.log(`✓ ${slots.length} slots (history + ${HORIZON_DAYS} days ahead); ${cancelledCount} meditation classes cancelled for overlapping events`)
 
   // 3c. Recurring templates for the fixed weekly events.
   await supabase.from('recurring_templates').insert(RECURRING_TEMPLATES)
@@ -189,6 +211,7 @@ async function main() {
   let rot = 0
   const order = [...volunteers].sort(() => rng() - 0.5)
   for (const s of slots) {
+    if (s.status === 'cancelled') continue                        // no sign-ups for cancelled classes
     const daysAhead = Math.round((new Date(s.date) - today) / 86_400_000)
     let target
     if (daysAhead <= 0) {
@@ -274,8 +297,9 @@ async function main() {
 
   // 8. Dashboard preview
   const filled = new Set(signupRows.map(s => s.slot_id))
-  const servicesToday = slots.filter(s => s.date === todayIso).length
-  const unfilledFuture = slots.filter(s => s.date >= todayIso && !filled.has(s.id)).length
+  const active = slots.filter(s => s.status !== 'cancelled')
+  const servicesToday = active.filter(s => s.date === todayIso).length
+  const unfilledFuture = active.filter(s => s.date >= todayIso && !filled.has(s.id)).length
   console.log(`\nDashboard → Services Today: ${servicesToday} · Pending Swaps: ${swapRows.length} · Unfilled (future): ${unfilledFuture} · Volunteers: ${volunteers.length}`)
   console.log('\n✓ done')
 }

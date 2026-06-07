@@ -17,10 +17,11 @@ export async function signUpForSlot(_prev: ActionResult | null, formData: FormDa
 
   const { data: slot } = await supabase
     .from('slots')
-    .select('max_volunteers, duty, date, start_time, end_time, location')
+    .select('max_volunteers, duty, date, start_time, end_time, location, status')
     .eq('id', slotId)
     .single()
   if (!slot) return { error: 'Slot not found.' }
+  if (slot.status === 'cancelled') return { error: 'This slot has been cancelled.' }
 
   // Friendly pre-check — the database trigger is the actual source of truth.
   const { count } = await supabase
