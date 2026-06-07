@@ -342,7 +342,17 @@ src/
 │   ├── rota/rota-grid.tsx     ← 7-column interactive weekly calendar
 │   └── ui/badge.tsx           ← role badge component
 ├── lib/
-│   ├── actions.ts             ← all Server Actions (auth, rota, admin, swaps)
+│   ├── actions/              ← Server Actions, grouped by domain
+│   │   ├── index.ts          ← barrel re-export (stable `@/lib/actions` path)
+│   │   ├── auth.ts           ← login, logout, magic link, password reset
+│   │   ├── profile.ts        ← profile + password change
+│   │   ├── availability.ts   ← volunteer unavailability
+│   │   ├── signups.ts        ← rota sign-up / cancel
+│   │   ├── swaps.ts          ← shift swap request + admin review
+│   │   ├── slots.ts          ← slot CRUD + admin volunteer assignment
+│   │   ├── members.ts        ← member management (admin only)
+│   │   └── templates.ts      ← recurring templates + slot generation
+│   ├── audit.ts              ← shared audit-log helper
 │   ├── supabase/
 │   │   ├── client.ts          ← browser Supabase client
 │   │   └── server.ts          ← server + admin Supabase clients
