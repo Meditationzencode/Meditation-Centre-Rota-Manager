@@ -33,31 +33,26 @@ const HORIZON_DAYS = 42       // always keep this many days of upcoming shifts
 const ALL = '00000000-0000-0000-0000-000000000000'
 
 // Weekly duty pattern (day: 0=Mon … 6=Sun)
+// Evening meditation is intentionally omitted — those evening slots are left
+// free for the special events and classes below.
 const TEMPLATE = [
   { day: 0, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
   { day: 0, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
-  { day: 0, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   { day: 1, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
   { day: 1, start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1 },
   { day: 1, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
-  { day: 1, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   { day: 2, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
   { day: 2, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
-  { day: 2, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   { day: 3, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
   { day: 3, start: '09:00', end: '13:00', duty: 'Reception Desk',     location: 'Reception',     max: 1 },
   { day: 3, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
-  { day: 3, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   { day: 4, start: '06:30', end: '07:30', duty: 'Morning Sitting',    location: 'Shrine Room',   max: 2 },
   { day: 4, start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3 },
-  { day: 4, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   { day: 5, start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3 },
   { day: 5, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
   { day: 5, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
-  { day: 5, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   { day: 6, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
   { day: 6, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
-  { day: 6, start: '19:30', end: '20:30', duty: 'Evening Sitting',    location: 'Shrine Room',   max: 3 },
   // Fixed weekly special events & classes
   { day: 1, start: '17:00', end: '20:00', duty: 'Sangha Film Club',   location: 'Community Room', max: 2 },
   { day: 4, start: '18:00', end: '20:00', duty: 'Puja Evening',       location: 'Shrine Room',    max: 2 },
