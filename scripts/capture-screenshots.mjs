@@ -25,8 +25,8 @@ async function shot(page, name) {
 
 async function loginAdmin(page) {
   await page.goto(`${BASE_URL}/login`)
-  await page.fill('input[name="email"]',    ADMIN_EMAIL)
-  await page.fill('input[name="password"]', ADMIN_PASSWORD)
+  await page.fill('#email', ADMIN_EMAIL)
+  await page.fill('#pass',  ADMIN_PASSWORD)
   await page.click('button[type="submit"]')
   await page.waitForURL('**/dashboard', { timeout: 15_000 })
 }
@@ -49,10 +49,10 @@ async function main() {
 
   // Login with validation error
   await page.goto(`${BASE_URL}/login`)
-  await page.fill('input[name="email"]',    'wrong@example.com')
-  await page.fill('input[name="password"]', 'badpassword')
+  await page.fill('#email', 'wrong@example.com')
+  await page.fill('#pass',  'badpassword')
   await page.click('button[type="submit"]')
-  await page.waitForSelector('text=/invalid|incorrect|error/i', { timeout: 10_000 }).catch(() => {})
+  await page.waitForSelector('.banner--err', { timeout: 10_000 }).catch(() => {})
   await shot(page, 'login')
 
   // Log in as admin
