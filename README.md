@@ -396,12 +396,24 @@ src/
 │   │   ├── slots.ts          ← slot CRUD + admin volunteer assignment
 │   │   ├── members.ts        ← member management (admin only)
 │   │   └── templates.ts      ← recurring templates + slot generation
-│   ├── audit.ts              ← shared audit-log helper
 │   ├── supabase/
 │   │   ├── client.ts          ← browser Supabase client
 │   │   └── server.ts          ← server + admin Supabase clients
-│   ├── types.ts
-│   └── utils.ts
+│   ├── auth.ts               ← requireUser / requireRole guards
+│   ├── audit.ts              ← shared audit-log helper (write)
+│   ├── audit-format.ts       ← audit-log display formatting (labels, colours)
+│   ├── badge-styles.ts       ← role / status / count badge style maps
+│   ├── duty-colors.ts        ← per-duty colour treatments for the rota
+│   ├── email.ts              ← transactional emails via Resend
+│   ├── env-public.ts         ← public env vars (browser-safe)
+│   ├── env-server.ts         ← server-only env vars / secrets (`server-only`)
+│   ├── errors.ts             ← Postgres error → friendly message mapping
+│   ├── form-styles.ts        ← shared form input/label class strings
+│   ├── log.ts                ← structured logger
+│   ├── scheduling.ts         ← recurring-template → slot expansion (pure)
+│   ├── validation.ts         ← pure input validation for write paths
+│   ├── types.ts              ← shared types + DUTIES / LOCATIONS
+│   └── utils.ts              ← date / week helpers
 └── middleware.ts              ← session guard, redirects unauthenticated users
 
 supabase/
