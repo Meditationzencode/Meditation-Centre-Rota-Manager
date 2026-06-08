@@ -50,9 +50,7 @@ const TEMPLATE = [
   { day: 4, start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3 },
   { day: 5, start: '10:00', end: '12:00', duty: 'Garden Maintenance', location: 'Gardens',       max: 3 },
   { day: 5, start: '12:00', end: '14:00', duty: 'Kitchen Duty',       location: 'Kitchen',       max: 2 },
-  { day: 5, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
   { day: 6, start: '08:00', end: '09:00', duty: 'Shrine Room Clean',  location: 'Shrine Room',   max: 2 },
-  { day: 6, start: '18:30', end: '21:00', duty: 'Welcome Greeter',    location: 'Main Entrance', max: 1 },
   // Fixed weekly special events & classes
   { day: 1, start: '17:00', end: '20:00', duty: 'Sangha Film Club',   location: 'Community Room', max: 2 },
   { day: 4, start: '18:00', end: '20:00', duty: 'Puja Evening',       location: 'Shrine Room',    max: 2 },
