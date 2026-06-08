@@ -41,9 +41,6 @@ async function main() {
   const page    = await desktop.newPage()
 
   // Public pages
-  await page.goto(`${BASE_URL}/`)
-  await shot(page, 'home')
-
   await page.goto(`${BASE_URL}/forgot-password`)
   await shot(page, 'forgot-password')
 
