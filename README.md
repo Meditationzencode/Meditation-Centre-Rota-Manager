@@ -378,7 +378,9 @@ src/
 │   │   │   ├── swaps/         ← swap request review (admin only)
 │   │   │   └── activity/      ← audit log (admin only)
 │   │   └── profile/
-│   ├── api/auth/callback/     ← Supabase OAuth redirect handler
+│   ├── api/
+│   │   ├── auth/callback/     ← Supabase auth redirect handler
+│   │   └── rota/export/       ← calendar (.ics) export endpoint
 │   ├── layout.tsx             ← root HTML + fonts
 │   └── globals.css
 ├── components/
