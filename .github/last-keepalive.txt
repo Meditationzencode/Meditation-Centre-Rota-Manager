@@ -2,4 +2,4 @@ This file is touched by .github/workflows/keepalive.yml once a month so that
 GitHub does not auto-disable the scheduled "Refresh demo data" workflow after
 60 days of repository inactivity. The timestamp below is updated on each run.
 
-2026-08-01T09:01:30Z
+2026-09-01T12:17:14Z
